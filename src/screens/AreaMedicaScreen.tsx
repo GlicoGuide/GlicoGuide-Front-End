@@ -1,63 +1,139 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
 import colors from '../theme/colors';
 
-const acoes = [
-  { icon: '📋', title: 'Personalizar Plano Alimentar', desc: 'Ajuste metas de calorias e macros' },
-  { icon: '✏️', title: 'Editar Base de Dados', desc: 'Gerencie alimentos e informações nutricionais' },
-  { icon: '⚙️', title: 'Configurar Metas Clínicas', desc: 'Defina alvos de glicemia e insulina' },
-];
+function calcStats(registros: GlicemiaRecord[]) {
+  if (registros.length === 0) return null;
+  const media = Math.round(registros.reduce((s, r) => s + r.valor_mgdl, 0) / registros.length);
+  const noAlvo = registros.filter(r => r.valor_mgdl >= 70 && r.valor_mgdl <= 180).length;
+  const tempoNoAlvo = Math.round((noAlvo / registros.length) * 100);
+  const hipo = registros.filter(r => r.valor_mgdl < 70).length;
+  return { media, tempoNoAlvo, hipo };
+}
 
 export default function AreaMedicaScreen() {
+  const [glicemia, setGlicemia] = useState<GlicemiaRecord[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [g, m] = await Promise.all([getGlicemia(), getMeals()]);
+      setGlicemia(g);
+      setMeals(m);
+    } catch {
+      // mantém dados anteriores
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const stats = calcStats(glicemia);
+  const totalCarbs = meals.reduce((s, m) => s + m.total_carboidratos_g, 0);
+  const mediaCarbs = meals.length > 0 ? Math.round(totalCarbs / meals.length) : null;
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => { setRefreshing(true); load(); }}
+          tintColor={colors.green}
+        />
+      }>
       <Text style={styles.pageTitle}>Área Médica</Text>
 
-      {/* Stats */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Área Médica</Text>
-        <Text style={styles.cardSub}>Configurações do tratamento</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.green }]}>72%</Text>
-            <Text style={styles.statLabel}>Tempo no{'\n'}Alvo</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>134</Text>
-            <Text style={styles.statLabel}>Glicemia{'\n'}Média</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.red }]}>2</Text>
-            <Text style={styles.statLabel}>Hipoglicemias</Text>
-          </View>
-        </View>
+      {loading ? (
+        <ActivityIndicator color={colors.green} style={{ marginTop: 40 }} />
+      ) : (
+        <>
+          {/* Stats glicemia */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Glicemia</Text>
+            <Text style={styles.cardSub}>Baseado em {glicemia.length} medição{glicemia.length !== 1 ? 'ões' : ''}</Text>
 
-        <View style={styles.obs}>
-          <Text style={styles.obsText}>
-            Observação: Paciente tem mantido boa consistência nas medições pré-prandiais. Notável redução no consumo de alimentos ultraprocessados.
-          </Text>
-        </View>
-
-        <View style={styles.alert}>
-          <Text style={styles.alertText}>
-            <Text style={{ color: colors.yellow, fontWeight: '700' }}>Atenção: </Text>
-            Picos de glicemia pós-almoço sugerem necessidade de ajuste na contagem de carboidratos ou revisão da dose de insulina rápida.
-          </Text>
-        </View>
-      </View>
-
-      {/* Ações Rápidas */}
-      <Text style={styles.sectionTitle}>Ações Rápidas</Text>
-      {acoes.map((a, i) => (
-        <TouchableOpacity key={i} style={styles.actionCard}>
-          <Text style={styles.actionIcon}>{a.icon}</Text>
-          <View style={styles.actionInfo}>
-            <Text style={styles.actionTitle}>{a.title}</Text>
-            <Text style={styles.actionDesc}>{a.desc}</Text>
+            {stats ? (
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <Text style={[styles.statValue, { color: colors.green }]}>{stats.tempoNoAlvo}%</Text>
+                  <Text style={styles.statLabel}>Tempo no{'\n'}Alvo</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{stats.media}</Text>
+                  <Text style={styles.statLabel}>Média{'\n'}mg/dL</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={[styles.statValue, { color: stats.hipo > 0 ? colors.red : colors.green }]}>
+                    {stats.hipo}
+                  </Text>
+                  <Text style={styles.statLabel}>Hipoglicemias</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.empty}>Nenhuma medição de glicemia ainda.</Text>
+            )}
           </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-      ))}
+
+          {/* Stats refeições */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Refeições</Text>
+            <Text style={styles.cardSub}>Baseado em {meals.length} refeição{meals.length !== 1 ? 'ões' : ''} analisada{meals.length !== 1 ? 's' : ''}</Text>
+
+            {meals.length > 0 ? (
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{meals.length}</Text>
+                  <Text style={styles.statLabel}>Refeições{'\n'}registradas</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{mediaCarbs}g</Text>
+                  <Text style={styles.statLabel}>Média de{'\n'}carboidratos</Text>
+                </View>
+                <View style={styles.stat}>
+                  <Text style={styles.statValue}>{totalCarbs}g</Text>
+                  <Text style={styles.statLabel}>Total de{'\n'}carboidratos</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.empty}>Nenhuma refeição analisada ainda.</Text>
+            )}
+          </View>
+
+          {/* Zona alvo */}
+          {stats && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Distribuição das medições</Text>
+              <Text style={styles.cardSub}>Classificação por faixa de glicemia</Text>
+              {[
+                { label: 'Hipoglicemia (< 70)', count: glicemia.filter(r => r.valor_mgdl < 70).length, color: colors.red },
+                { label: 'Normal (70–180)', count: glicemia.filter(r => r.valor_mgdl >= 70 && r.valor_mgdl <= 180).length, color: colors.green },
+                { label: 'Alta (> 180)', count: glicemia.filter(r => r.valor_mgdl > 180).length, color: colors.yellow },
+              ].map((item, i) => (
+                <View key={i} style={styles.faixaRow}>
+                  <View style={[styles.faixaDot, { backgroundColor: item.color }]} />
+                  <Text style={styles.faixaLabel}>{item.label}</Text>
+                  <Text style={[styles.faixaCount, { color: item.color }]}>{item.count}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
+      <View style={{ height: 24 }} />
     </ScrollView>
   );
 }
@@ -70,7 +146,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     color: colors.white,
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
     marginTop: 16,
     marginBottom: 16,
@@ -79,7 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   cardTitle: {
     color: colors.white,
@@ -95,14 +171,13 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 16,
   },
   stat: {
     alignItems: 'center',
   },
   statValue: {
     color: colors.white,
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
   },
   statLabel: {
@@ -112,62 +187,32 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 16,
   },
-  obs: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+  empty: {
+    color: colors.textMuted,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 8,
   },
-  obsText: {
-    color: colors.white,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  alert: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: 10,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.yellow,
-  },
-  alertText: {
-    color: colors.white,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  sectionTitle: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  actionCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 16,
+  faixaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    gap: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 10,
   },
-  actionIcon: {
-    fontSize: 22,
+  faixaDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
-  actionInfo: {
+  faixaLabel: {
+    color: colors.white,
+    fontSize: 13,
     flex: 1,
   },
-  actionTitle: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionDesc: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  chevron: {
-    color: colors.textMuted,
-    fontSize: 22,
+  faixaCount: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

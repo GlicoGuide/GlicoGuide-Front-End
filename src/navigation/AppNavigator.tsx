@@ -2,11 +2,13 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import { useAuth } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import HomeStack from './HomeStack';
 import ChatScreen from '../screens/ChatScreen';
+import DadosScreen from '../screens/DadosScreen';
 import AreaMedicaScreen from '../screens/AreaMedicaScreen';
 import colors from '../theme/colors';
 
@@ -25,9 +27,6 @@ type TabParamList = {
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function DadosPlaceholder() {
-  return null;
-}
 
 function MainTabs() {
   return (
@@ -42,21 +41,19 @@ function MainTabs() {
         },
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: colors.tabInactive,
-        tabBarLabel: ({ color }) => (
-          <Text style={{ color, fontSize: 11, marginTop: -4 }}>{route.name}</Text>
-        ),
+        tabBarLabelStyle: { fontSize: 11, marginTop: -4 },
         tabBarIcon: ({ color }) => {
           const icons: Record<string, string> = {
-            'Início': '🏠',
-            'Dados': '📊',
-            'Chat': '💬',
-            'Saúde': '❤️',
+            'Início': 'home-outline',
+            'Dados': 'chart-bar',
+            'Chat': 'message-outline',
+            'Saúde': 'heart-pulse',
           };
-          return <Text style={{ fontSize: 20 }}>{icons[route.name]}</Text>;
+          return <MaterialCommunityIcons name={icons[route.name]} size={24} color={color} />;
         },
       })}>
       <Tab.Screen name="Início" component={HomeStack} />
-      <Tab.Screen name="Dados" component={DadosPlaceholder} />
+      <Tab.Screen name="Dados" component={DadosScreen} />
       <Tab.Screen name="Chat" component={ChatScreen} />
       <Tab.Screen name="Saúde" component={AreaMedicaScreen} />
     </Tab.Navigator>
@@ -64,11 +61,16 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const { token } = useAuth();
+
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="Login" component={LoginScreen} />
-        <RootStack.Screen name="Main" component={MainTabs} />
+        {token ? (
+          <RootStack.Screen name="Main" component={MainTabs} />
+        ) : (
+          <RootStack.Screen name="Login" component={LoginScreen} />
+        )}
       </RootStack.Navigator>
     </NavigationContainer>
   );

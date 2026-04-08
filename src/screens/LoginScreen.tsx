@@ -7,18 +7,32 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { useAuth } from '../context/AuthContext';
 import colors from '../theme/colors';
 
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
-};
-
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen() {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email || !senha) {
+      Alert.alert('Atenção', 'Preencha e-mail e senha.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await signIn(email.trim(), senha);
+    } catch (err: any) {
+      Alert.alert('Erro ao entrar', err.message || 'Verifique suas credenciais.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <KeyboardAvoidingView
@@ -41,7 +55,6 @@ export default function LoginScreen({ navigation }: Props) {
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
-            placeholder=""
             placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
@@ -52,7 +65,6 @@ export default function LoginScreen({ navigation }: Props) {
           <Text style={styles.label}>Senha</Text>
           <TextInput
             style={styles.input}
-            placeholder=""
             placeholderTextColor={colors.textMuted}
             value={senha}
             onChangeText={setSenha}
@@ -63,13 +75,18 @@ export default function LoginScreen({ navigation }: Props) {
         {/* Botões */}
         <View style={styles.buttons}>
           <TouchableOpacity
-            style={styles.btnPrimary}
-            onPress={() => navigation.replace('Main')}>
-            <Text style={styles.btnPrimaryText}>Entra</Text>
+            style={[styles.btnPrimary, loading && { opacity: 0.7 }]}
+            onPress={handleLogin}
+            disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <Text style={styles.btnPrimaryText}>Entrar</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.btnSecondary}>
-            <Text style={styles.btnSecondaryText}>Cria conta</Text>
+            <Text style={styles.btnSecondaryText}>Criar conta</Text>
           </TouchableOpacity>
         </View>
       </View>

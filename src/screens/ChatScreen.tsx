@@ -18,14 +18,17 @@ type Mensagem = {
   hora: string;
 };
 
-const mensagensIniciais: Mensagem[] = [
-  { id: '1', texto: 'Oi! Eu sou o Glico. Como você está se sentindo hoje?', remetente: 'glico', hora: '10:00' },
-  { id: '2', texto: 'Posso comer um doce agora?', remetente: 'usuario', hora: '07:51 PM' },
-  { id: '3', texto: 'Que tal optar por uma fruta nesse momento? Assim você consegue mais pontos para a próxima consulta', remetente: 'glico', hora: '07:51 PM' },
+const mensagemBoasVindas: Mensagem[] = [
+  {
+    id: '0',
+    texto: 'Oi! Eu sou o Glico. Como posso te ajudar hoje?',
+    remetente: 'glico',
+    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  },
 ];
 
 export default function ChatScreen() {
-  const [mensagens, setMensagens] = useState(mensagensIniciais);
+  const [mensagens, setMensagens] = useState(mensagemBoasVindas);
   const [texto, setTexto] = useState('');
 
   const enviar = () => {
@@ -63,12 +66,14 @@ export default function ChatScreen() {
                 <Text style={styles.glicoAvatarText}>G</Text>
               </View>
             )}
-            <View style={styles.bubbleContent}>
-              <Text
-                style={[
-                  styles.bubbleText,
-                  item.remetente === 'usuario' && styles.bubbleTextUser,
-                ]}>
+            <View style={[
+              styles.bubbleContent,
+              item.remetente === 'usuario' ? styles.bubbleContentUser : styles.bubbleContentGlico,
+            ]}>
+              <Text style={[
+                styles.bubbleText,
+                item.remetente === 'usuario' && styles.bubbleTextUser,
+              ]}>
                 {item.texto}
               </Text>
               <Text style={styles.hora}>{item.hora}</Text>
@@ -140,9 +145,14 @@ const styles = StyleSheet.create({
   },
   bubbleContent: {
     maxWidth: '70%',
-    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 12,
+  },
+  bubbleContentGlico: {
+    backgroundColor: colors.card,
+  },
+  bubbleContentUser: {
+    backgroundColor: colors.green,
   },
   bubbleText: {
     color: colors.white,
