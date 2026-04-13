@@ -7,8 +7,9 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 
 function calcStats(registros: GlicemiaRecord[]) {
   if (registros.length === 0) return null;
@@ -20,6 +21,7 @@ function calcStats(registros: GlicemiaRecord[]) {
 }
 
 export default function AreaMedicaScreen() {
+  const { colors } = useTheme();
   const [glicemia, setGlicemia] = useState<GlicemiaRecord[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,88 +46,100 @@ export default function AreaMedicaScreen() {
   const totalCarbs = meals.reduce((s, m) => s + m.total_carboidratos_g, 0);
   const mediaCarbs = meals.length > 0 ? Math.round(totalCarbs / meals.length) : null;
 
+  const faixas = [
+    { label: 'Hipoglicemia (< 70)', count: glicemia.filter(r => r.valor_mgdl < 70).length, color: colors.red, icon: 'arrow-down-circle-outline' },
+    { label: 'Normal (70–180)', count: glicemia.filter(r => r.valor_mgdl >= 70 && r.valor_mgdl <= 180).length, color: colors.green, icon: 'check-circle-outline' },
+    { label: 'Alta (> 180)', count: glicemia.filter(r => r.valor_mgdl > 180).length, color: colors.yellow, icon: 'arrow-up-circle-outline' },
+  ];
+
+  const s = makeStyles(colors);
+
   return (
     <ScrollView
-      style={styles.container}
+      style={s.container}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => { setRefreshing(true); load(); }}
-          tintColor={colors.green}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />
       }>
-      <Text style={styles.pageTitle}>Área Médica</Text>
+      <Text style={s.pageTitle}>Área Médica</Text>
 
       {loading ? (
         <ActivityIndicator color={colors.green} style={{ marginTop: 40 }} />
       ) : (
         <>
-          {/* Stats glicemia */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Glicemia</Text>
-            <Text style={styles.cardSub}>Baseado em {glicemia.length} medição{glicemia.length !== 1 ? 'ões' : ''}</Text>
+          <View style={s.card}>
+            <View style={s.cardTitleRow}>
+              <MaterialCommunityIcons name="water-outline" size={20} color={colors.blue} />
+              <Text style={s.cardTitle}>Glicemia</Text>
+            </View>
+            <Text style={s.cardSub}>Baseado em {glicemia.length} medição{glicemia.length !== 1 ? 'ões' : ''}</Text>
 
             {stats ? (
-              <View style={styles.statsRow}>
-                <View style={styles.stat}>
-                  <Text style={[styles.statValue, { color: colors.green }]}>{stats.tempoNoAlvo}%</Text>
-                  <Text style={styles.statLabel}>Tempo no{'\n'}Alvo</Text>
+              <View style={s.statsRow}>
+                <View style={s.stat}>
+                  <Text style={[s.statValue, { color: colors.green }]}>{stats.tempoNoAlvo}%</Text>
+                  <Text style={s.statLabel}>Tempo no{'\n'}Alvo</Text>
                 </View>
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{stats.media}</Text>
-                  <Text style={styles.statLabel}>Média{'\n'}mg/dL</Text>
+                <View style={s.stat}>
+                  <Text style={s.statValue}>{stats.media}</Text>
+                  <Text style={s.statLabel}>Média{'\n'}mg/dL</Text>
                 </View>
-                <View style={styles.stat}>
-                  <Text style={[styles.statValue, { color: stats.hipo > 0 ? colors.red : colors.green }]}>
+                <View style={s.stat}>
+                  <Text style={[s.statValue, { color: stats.hipo > 0 ? colors.red : colors.green }]}>
                     {stats.hipo}
                   </Text>
-                  <Text style={styles.statLabel}>Hipoglicemias</Text>
+                  <Text style={s.statLabel}>Hipoglicemias</Text>
                 </View>
               </View>
             ) : (
-              <Text style={styles.empty}>Nenhuma medição de glicemia ainda.</Text>
+              <View style={s.emptyBox}>
+                <MaterialCommunityIcons name="chart-line" size={32} color={colors.textMuted} />
+                <Text style={s.empty}>Nenhuma medição de glicemia ainda.</Text>
+              </View>
             )}
           </View>
 
-          {/* Stats refeições */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Refeições</Text>
-            <Text style={styles.cardSub}>Baseado em {meals.length} refeição{meals.length !== 1 ? 'ões' : ''} analisada{meals.length !== 1 ? 's' : ''}</Text>
+          <View style={s.card}>
+            <View style={s.cardTitleRow}>
+              <MaterialCommunityIcons name="food-fork-drink" size={20} color={colors.orange} />
+              <Text style={s.cardTitle}>Refeições</Text>
+            </View>
+            <Text style={s.cardSub}>Baseado em {meals.length} refeição{meals.length !== 1 ? 'ões' : ''} analisada{meals.length !== 1 ? 's' : ''}</Text>
 
             {meals.length > 0 ? (
-              <View style={styles.statsRow}>
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{meals.length}</Text>
-                  <Text style={styles.statLabel}>Refeições{'\n'}registradas</Text>
+              <View style={s.statsRow}>
+                <View style={s.stat}>
+                  <Text style={s.statValue}>{meals.length}</Text>
+                  <Text style={s.statLabel}>Refeições{'\n'}registradas</Text>
                 </View>
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{mediaCarbs}g</Text>
-                  <Text style={styles.statLabel}>Média de{'\n'}carboidratos</Text>
+                <View style={s.stat}>
+                  <Text style={s.statValue}>{mediaCarbs}g</Text>
+                  <Text style={s.statLabel}>Média de{'\n'}carboidratos</Text>
                 </View>
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{totalCarbs}g</Text>
-                  <Text style={styles.statLabel}>Total de{'\n'}carboidratos</Text>
+                <View style={s.stat}>
+                  <Text style={s.statValue}>{totalCarbs}g</Text>
+                  <Text style={s.statLabel}>Total de{'\n'}carboidratos</Text>
                 </View>
               </View>
             ) : (
-              <Text style={styles.empty}>Nenhuma refeição analisada ainda.</Text>
+              <View style={s.emptyBox}>
+                <MaterialCommunityIcons name="food-off" size={32} color={colors.textMuted} />
+                <Text style={s.empty}>Nenhuma refeição analisada ainda.</Text>
+              </View>
             )}
           </View>
 
-          {/* Zona alvo */}
           {stats && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Distribuição das medições</Text>
-              <Text style={styles.cardSub}>Classificação por faixa de glicemia</Text>
-              {[
-                { label: 'Hipoglicemia (< 70)', count: glicemia.filter(r => r.valor_mgdl < 70).length, color: colors.red },
-                { label: 'Normal (70–180)', count: glicemia.filter(r => r.valor_mgdl >= 70 && r.valor_mgdl <= 180).length, color: colors.green },
-                { label: 'Alta (> 180)', count: glicemia.filter(r => r.valor_mgdl > 180).length, color: colors.yellow },
-              ].map((item, i) => (
-                <View key={i} style={styles.faixaRow}>
-                  <View style={[styles.faixaDot, { backgroundColor: item.color }]} />
-                  <Text style={styles.faixaLabel}>{item.label}</Text>
-                  <Text style={[styles.faixaCount, { color: item.color }]}>{item.count}</Text>
+            <View style={s.card}>
+              <View style={s.cardTitleRow}>
+                <MaterialCommunityIcons name="chart-pie" size={20} color={colors.purple} />
+                <Text style={s.cardTitle}>Distribuição das medições</Text>
+              </View>
+              <Text style={s.cardSub}>Classificação por faixa de glicemia</Text>
+              {faixas.map((item, i) => (
+                <View key={i} style={[s.faixaRow, i < faixas.length - 1 && s.faixaBorder]}>
+                  <MaterialCommunityIcons name={item.icon} size={20} color={item.color} />
+                  <Text style={s.faixaLabel}>{item.label}</Text>
+                  <Text style={[s.faixaCount, { color: item.color }]}>{item.count}</Text>
                 </View>
               ))}
             </View>
@@ -138,81 +152,23 @@ export default function AreaMedicaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 16,
-  },
-  pageTitle: {
-    color: colors.white,
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTitle: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  cardSub: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-    marginBottom: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  stat: {
-    alignItems: 'center',
-  },
-  statValue: {
-    color: colors.white,
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  statLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  empty: {
-    color: colors.textMuted,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-  faixaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 10,
-  },
-  faixaDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  faixaLabel: {
-    color: colors.white,
-    fontSize: 13,
-    flex: 1,
-  },
-  faixaCount: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
+    pageTitle: { color: colors.white, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 16 },
+    card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },
+    cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    cardTitle: { color: colors.white, fontSize: 15, fontWeight: '700' },
+    cardSub: { color: colors.textMuted, fontSize: 12, marginBottom: 16 },
+    statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
+    stat: { alignItems: 'center' },
+    statValue: { color: colors.white, fontSize: 28, fontWeight: '700' },
+    statLabel: { color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 4, lineHeight: 16 },
+    emptyBox: { alignItems: 'center', paddingVertical: 12, gap: 8 },
+    empty: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
+    faixaRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
+    faixaBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+    faixaLabel: { color: colors.white, fontSize: 13, flex: 1 },
+    faixaCount: { fontSize: 15, fontWeight: '700' },
+  });
+}

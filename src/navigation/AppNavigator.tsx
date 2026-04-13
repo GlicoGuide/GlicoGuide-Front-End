@@ -5,12 +5,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import LoginScreen from '../screens/LoginScreen';
 import HomeStack from './HomeStack';
 import ChatScreen from '../screens/ChatScreen';
 import DadosScreen from '../screens/DadosScreen';
 import AreaMedicaScreen from '../screens/AreaMedicaScreen';
-import colors from '../theme/colors';
+import ProfileScreen from '../screens/ProfileScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -22,13 +23,14 @@ type TabParamList = {
   Dados: undefined;
   Chat: undefined;
   Saúde: undefined;
+  Perfil: undefined;
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-
 function MainTabs() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -48,6 +50,7 @@ function MainTabs() {
             'Dados': 'chart-bar',
             'Chat': 'message-outline',
             'Saúde': 'heart-pulse',
+            'Perfil': 'account-circle-outline',
           };
           return <MaterialCommunityIcons name={icons[route.name]} size={24} color={color} />;
         },
@@ -56,6 +59,7 @@ function MainTabs() {
       <Tab.Screen name="Dados" component={DadosScreen} />
       <Tab.Screen name="Chat" component={ChatScreen} />
       <Tab.Screen name="Saúde" component={AreaMedicaScreen} />
+      <Tab.Screen name="Perfil" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

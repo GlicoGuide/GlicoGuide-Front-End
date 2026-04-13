@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
-import colors from '../theme/colors';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTheme } from '../context/ThemeContext';
 
 type Mensagem = {
   id: string;
@@ -28,8 +29,10 @@ const mensagemBoasVindas: Mensagem[] = [
 ];
 
 export default function ChatScreen() {
+  const { colors } = useTheme();
   const [mensagens, setMensagens] = useState(mensagemBoasVindas);
   const [texto, setTexto] = useState('');
+  const listRef = useRef<FlatList>(null);
 
   const enviar = () => {
     if (!texto.trim()) return;
@@ -41,160 +44,90 @@ export default function ChatScreen() {
     };
     setMensagens(prev => [...prev, nova]);
     setTexto('');
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   };
+
+  const s = makeStyles(colors);
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={90}>
-      <Text style={styles.title}>Chat do Glico</Text>
+
+      <View style={s.topBar}>
+        <View style={s.glicoAvatar}>
+          <MaterialCommunityIcons name="robot-outline" size={20} color={colors.background} />
+        </View>
+        <View>
+          <Text style={s.topBarTitle}>Chat do Glico</Text>
+          <Text style={s.topBarSub}>Assistente de saúde</Text>
+        </View>
+      </View>
 
       <FlatList
+        ref={listRef}
         data={mensagens}
         keyExtractor={item => item.id}
-        style={styles.list}
+        style={s.list}
         contentContainerStyle={{ paddingVertical: 12 }}
         renderItem={({ item }) => (
-          <View
-            style={[
-              styles.bubble,
-              item.remetente === 'usuario' ? styles.bubbleUser : styles.bubbleGlico,
-            ]}>
+          <View style={[s.bubble, item.remetente === 'usuario' ? s.bubbleUser : s.bubbleGlico]}>
             {item.remetente === 'glico' && (
-              <View style={styles.glicoAvatar}>
-                <Text style={styles.glicoAvatarText}>G</Text>
+              <View style={s.glicoAvatarSmall}>
+                <MaterialCommunityIcons name="robot-outline" size={16} color={colors.background} />
               </View>
             )}
             <View style={[
-              styles.bubbleContent,
-              item.remetente === 'usuario' ? styles.bubbleContentUser : styles.bubbleContentGlico,
+              s.bubbleContent,
+              item.remetente === 'usuario' ? s.bubbleContentUser : s.bubbleContentGlico,
             ]}>
-              <Text style={[
-                styles.bubbleText,
-                item.remetente === 'usuario' && styles.bubbleTextUser,
-              ]}>
+              <Text style={[s.bubbleText, item.remetente === 'usuario' && s.bubbleTextUser]}>
                 {item.texto}
               </Text>
-              <Text style={styles.hora}>{item.hora}</Text>
+              <Text style={s.hora}>{item.hora}</Text>
             </View>
           </View>
         )}
       />
 
-      <View style={styles.inputRow}>
+      <View style={s.inputRow}>
         <TextInput
-          style={styles.input}
+          style={s.input}
           placeholder="Digite sua mensagem..."
           placeholderTextColor={colors.textMuted}
           value={texto}
           onChangeText={setTexto}
           onSubmitEditing={enviar}
         />
-        <TouchableOpacity style={styles.sendBtn} onPress={enviar}>
-          <Text style={styles.sendIcon}>➤</Text>
+        <TouchableOpacity style={s.sendBtn} onPress={enviar}>
+          <MaterialCommunityIcons name="send" size={20} color={colors.background} />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  list: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  bubble: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-end',
-  },
-  bubbleGlico: {
-    justifyContent: 'flex-start',
-  },
-  bubbleUser: {
-    justifyContent: 'flex-end',
-  },
-  glicoAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  glicoAvatarText: {
-    color: colors.background,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  bubbleContent: {
-    maxWidth: '70%',
-    borderRadius: 16,
-    padding: 12,
-  },
-  bubbleContentGlico: {
-    backgroundColor: colors.card,
-  },
-  bubbleContentUser: {
-    backgroundColor: colors.green,
-  },
-  bubbleText: {
-    color: colors.white,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  bubbleTextUser: {
-    color: colors.background,
-  },
-  hora: {
-    color: colors.textMuted,
-    fontSize: 10,
-    marginTop: 4,
-    textAlign: 'right',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    padding: 12,
-    gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    color: colors.white,
-    fontSize: 14,
-  },
-  sendBtn: {
-    backgroundColor: colors.green,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendIcon: {
-    color: colors.background,
-    fontSize: 16,
-  },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    topBar: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+    glicoAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
+    topBarTitle: { color: colors.white, fontSize: 15, fontWeight: '600' },
+    topBarSub: { color: colors.textMuted, fontSize: 12 },
+    list: { flex: 1, paddingHorizontal: 16 },
+    bubble: { flexDirection: 'row', marginBottom: 16, alignItems: 'flex-end' },
+    bubbleGlico: { justifyContent: 'flex-start' },
+    bubbleUser: { justifyContent: 'flex-end' },
+    glicoAvatarSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center', marginRight: 8, marginBottom: 4 },
+    bubbleContent: { maxWidth: '70%', borderRadius: 16, padding: 12 },
+    bubbleContentGlico: { backgroundColor: colors.card },
+    bubbleContentUser: { backgroundColor: colors.green },
+    bubbleText: { color: colors.white, fontSize: 13, lineHeight: 20 },
+    bubbleTextUser: { color: colors.background },
+    hora: { color: colors.textMuted, fontSize: 10, marginTop: 4, textAlign: 'right' },
+    inputRow: { flexDirection: 'row', padding: 12, gap: 10, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+    input: { flex: 1, backgroundColor: colors.card, borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, color: colors.white, fontSize: 14 },
+    sendBtn: { backgroundColor: colors.green, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  });
+}

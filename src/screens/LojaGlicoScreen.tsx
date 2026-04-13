@@ -1,159 +1,97 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import colors from '../theme/colors';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTheme } from '../context/ThemeContext';
 
 const recompensas = [
-  { id: 1, nome: 'Mudar Avatar', desc: 'Desbloqueie novos avatares divertidos...', pontos: 500, desbloqueada: false },
-  { id: 2, nome: 'Mudar Cor do App', desc: 'Personalize o tema do GlicoGuide.', pontos: 1000, desbloqueada: false },
-  { id: 3, nome: 'Brinde no Consultório', desc: 'Resgate um brinde na sua próxima consulta.', pontos: 0, desbloqueada: false },
+  { id: 1, nome: 'Mudar Avatar', desc: 'Desbloqueie novos avatares divertidos...', pontos: 500, icon: 'account-edit-outline' },
+  { id: 2, nome: 'Mudar Cor do App', desc: 'Personalize o tema do GlicoGuide.', pontos: 1000, icon: 'palette-outline' },
+  { id: 3, nome: 'Brinde no Consultório', desc: 'Resgate um brinde na sua próxima consulta.', pontos: 2000, icon: 'medical-bag' },
 ];
 
 export default function LojaGlicoScreen({ navigation }: any) {
+  const { colors } = useTheme();
   const pontos = 350;
+  const s = makeStyles(colors);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>←</Text>
+    <ScrollView style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.white} />
         </TouchableOpacity>
-        <Text style={styles.title}>Loja de Pontos</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>🎮 {pontos} GP</Text>
+        <Text style={s.title}>Loja de Pontos</Text>
+        <View style={s.badge}>
+          <MaterialCommunityIcons name="gamepad-variant-outline" size={14} color={colors.green} />
+          <Text style={s.badgeText}>{pontos} GP</Text>
         </View>
       </View>
 
-      {/* Banner tempo poupado */}
-      <View style={styles.banner}>
-        <Text style={styles.bannerTitle}>⏱ Tempo Poupado</Text>
-        <Text style={styles.bannerDesc}>
-          Graças à câmera inteligente, você já poupou 4 horas de digitação este mês!
-        </Text>
-        <Text style={styles.bannerNote}>Isso equivale a 2 filmes! 🎬🍿</Text>
+      <View style={s.banner}>
+        <View style={s.bannerIcon}>
+          <MaterialCommunityIcons name="timer-outline" size={24} color={colors.cyan} />
+        </View>
+        <View style={s.bannerContent}>
+          <Text style={s.bannerTitle}>Tempo Poupado</Text>
+          <Text style={s.bannerDesc}>
+            Graças à câmera inteligente, você já poupou 4 horas de digitação este mês!
+          </Text>
+          <View style={s.bannerNote}>
+            <MaterialCommunityIcons name="movie-open-outline" size={14} color={colors.textMuted} />
+            <Text style={s.bannerNoteText}>Isso equivale a 2 filmes!</Text>
+          </View>
+        </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Recompensas Disponíveis</Text>
+      <Text style={s.sectionTitle}>Recompensas Disponíveis</Text>
 
       {recompensas.map(r => (
-        <View key={r.id} style={styles.card}>
-          <Text style={styles.cardIcon}>🎁</Text>
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardNome}>{r.nome}</Text>
-            <Text style={styles.cardDesc}>{r.desc}</Text>
-            <Text style={styles.cardPontos}>{r.pontos} GlicoPoints</Text>
+        <View key={r.id} style={s.card}>
+          <View style={s.cardIconBox}>
+            <MaterialCommunityIcons name={r.icon} size={28} color={colors.yellow} />
           </View>
-          <View style={styles.bloqueadoBadge}>
-            <Text style={styles.bloqueadoText}>Bloqueado</Text>
+          <View style={s.cardInfo}>
+            <Text style={s.cardNome}>{r.nome}</Text>
+            <Text style={s.cardDesc}>{r.desc}</Text>
+            <View style={s.cardPontosRow}>
+              <MaterialCommunityIcons name="star-circle-outline" size={14} color={colors.yellow} />
+              <Text style={s.cardPontos}>{r.pontos} GlicoPoints</Text>
+            </View>
+          </View>
+          <View style={s.bloqueadoBadge}>
+            <MaterialCommunityIcons name="lock-outline" size={14} color={colors.textMuted} />
           </View>
         </View>
       ))}
+
+      <View style={{ height: 24 }} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  backText: {
-    color: colors.white,
-    fontSize: 22,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 17,
-    fontWeight: '700',
-    flex: 1,
-  },
-  badge: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgeText: {
-    color: colors.green,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  banner: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  bannerTitle: {
-    color: colors.cyan,
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  bannerDesc: {
-    color: colors.white,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  bannerNote: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 6,
-  },
-  sectionTitle: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    gap: 12,
-  },
-  cardIcon: {
-    fontSize: 24,
-    marginTop: 2,
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardNome: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  cardDesc: {
-    color: colors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  cardPontos: {
-    color: colors.green,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  bloqueadoBadge: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  bloqueadoText: {
-    color: colors.textMuted,
-    fontSize: 11,
-  },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
+    header: { flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 16, gap: 12 },
+    backBtn: {},
+    title: { color: colors.white, fontSize: 17, fontWeight: '700', flex: 1 },
+    badge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.cardAlt, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+    badgeText: { color: colors.green, fontSize: 13, fontWeight: '700' },
+    banner: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 20, gap: 14 },
+    bannerIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.cyan + '22', alignItems: 'center', justifyContent: 'center' },
+    bannerContent: { flex: 1 },
+    bannerTitle: { color: colors.cyan, fontSize: 14, fontWeight: '700', marginBottom: 4 },
+    bannerDesc: { color: colors.white, fontSize: 13, lineHeight: 18 },
+    bannerNote: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+    bannerNoteText: { color: colors.textMuted, fontSize: 12 },
+    sectionTitle: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 12 },
+    card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 },
+    cardIconBox: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.yellow + '22', alignItems: 'center', justifyContent: 'center' },
+    cardInfo: { flex: 1 },
+    cardNome: { color: colors.white, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+    cardDesc: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 4 },
+    cardPontosRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    cardPontos: { color: colors.yellow, fontSize: 12, fontWeight: '600' },
+    bloqueadoBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.cardAlt, alignItems: 'center', justifyContent: 'center' },
+  });
+}

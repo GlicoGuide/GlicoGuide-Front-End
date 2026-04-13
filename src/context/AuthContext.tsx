@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { login as apiLogin, setToken } from '../services/api';
+import { login as apiLogin, register as apiRegister, setToken } from '../services/api';
 
 interface User {
   email: string;
@@ -10,6 +10,7 @@ interface AuthContextData {
   user: User | null;
   token: string | null;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -36,6 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({ email, name });
   }
 
+  async function signUp(name: string, email: string, password: string) {
+    await apiRegister(name, email, password);
+    await signIn(email, password);
+  }
+
   function signOut() {
     setToken(null);
     setTokenState(null);
@@ -43,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, token, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

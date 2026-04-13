@@ -127,6 +127,7 @@ export interface AnaliseResult {
 export async function analisarPrato(
   imagemUri: string,
   glicemiaAtual: number,
+  pesoPrato?: number,
   glicemiaAlvo = 100,
   ratioCarb = 15,
   fatorCorrecao = 40,
@@ -141,6 +142,9 @@ export async function analisarPrato(
   form.append('glicemia_alvo', String(glicemiaAlvo));
   form.append('ratio_carb', String(ratioCarb));
   form.append('fator_correcao', String(fatorCorrecao));
+  if (pesoPrato !== undefined) {
+    form.append('peso_prato_g', String(pesoPrato));
+  }
 
   return request<AnaliseResult>('/api/insulin/calcular', {
     method: 'POST',

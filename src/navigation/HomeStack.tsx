@@ -6,6 +6,8 @@ import LembretesScreen from '../screens/LembretesScreen';
 import MinhasMetasScreen from '../screens/MinhasMetasScreen';
 import LojaGlicoScreen from '../screens/LojaGlicoScreen';
 import AnaliseDePratoScreen from '../screens/AnaliseDePratoScreen';
+import DiarioScreen from '../screens/DiarioScreen';
+import ContarCarboScreen from '../screens/ContarCarboScreen';
 
 export type HomeStackParamList = {
   HomeMain: undefined;
@@ -14,6 +16,8 @@ export type HomeStackParamList = {
   MinhasMetas: undefined;
   LojaGlico: undefined;
   AnaliseDePrato: undefined;
+  Diario: undefined;
+  ContarCarbo: undefined;
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -27,6 +31,8 @@ export default function HomeStack() {
       <Stack.Screen name="MinhasMetas" component={MinhasMetasScreen} />
       <Stack.Screen name="LojaGlico" component={LojaGlicoScreen} />
       <Stack.Screen name="AnaliseDePrato" component={AnaliseDePratoScreen} />
+      <Stack.Screen name="Diario" component={DiarioScreen} />
+      <Stack.Screen name="ContarCarbo" component={ContarCarboScreen} />
     </Stack.Navigator>
   );
 }

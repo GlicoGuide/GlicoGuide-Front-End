@@ -12,22 +12,22 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { HomeStackParamList } from '../navigation/HomeStack';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
-import colors from '../theme/colors';
 
 type Props = {
   navigation: NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 };
 
 const actions = [
-  { label: 'Análise de\nPrato', icon: 'camera-outline', color: colors.cyan, screen: 'AnaliseDePrato' },
-  { label: 'Relatório\nMensal', icon: 'file-document-outline', color: colors.purple, screen: 'RelatorioMensal' },
-  { label: 'Lembretes', icon: 'bell-outline', color: colors.orange, screen: 'Lembretes' },
-  { label: 'Chat Amigo', icon: 'message-outline', color: colors.pink, screen: 'Chat' },
-  { label: 'Minhas\nMetas', icon: 'bullseye-arrow', color: colors.yellow, screen: 'MinhasMetas' },
-  { label: 'Loja Glico', icon: 'gift-outline', color: colors.red, screen: 'LojaGlico' },
-  { label: 'Diário', icon: 'book-open-outline', color: colors.blue, screen: null },
-  { label: 'Contar\nCarbo', icon: 'silverware-fork-knife', color: colors.cyan, screen: null },
+  { label: 'Análise de\nPrato', icon: 'camera-outline', colorKey: 'cyan', screen: 'AnaliseDePrato' },
+  { label: 'Relatório\nMensal', icon: 'file-document-outline', colorKey: 'purple', screen: 'RelatorioMensal' },
+  { label: 'Lembretes', icon: 'bell-outline', colorKey: 'orange', screen: 'Lembretes' },
+  { label: 'Chat Amigo', icon: 'message-outline', colorKey: 'pink', screen: 'Chat' },
+  { label: 'Minhas\nMetas', icon: 'bullseye-arrow', colorKey: 'yellow', screen: 'MinhasMetas' },
+  { label: 'Loja Glico', icon: 'gift-outline', colorKey: 'red', screen: 'LojaGlico' },
+  { label: 'Diário', icon: 'book-open-outline', colorKey: 'blue', screen: 'Diario' },
+  { label: 'Contar\nCarbo', icon: 'silverware-fork-knife', colorKey: 'cyan', screen: 'ContarCarbo' },
 ];
 
 const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -43,7 +43,8 @@ function isToday(dateStr: string) {
 }
 
 export default function HomeScreen({ navigation }: Props) {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { colors } = useTheme();
   const [glicemia, setGlicemia] = useState<GlicemiaRecord[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ export default function HomeScreen({ navigation }: Props) {
       setGlicemia(g);
       setMeals(m);
     } catch {
-      // falha silenciosa, mantém dados anteriores
+      // falha silenciosa
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,32 +65,30 @@ export default function HomeScreen({ navigation }: Props) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Últimos 7 registros de glicemia para o gráfico
   const chartData = glicemia.slice(-7);
   const chartMax = Math.max(...chartData.map(r => r.valor_mgdl), 200);
   const chartMin = Math.min(...chartData.map(r => r.valor_mgdl), 60);
   const chartRange = chartMax - chartMin || 1;
 
-  // Média de glicemia
   const mediaGlicemia =
     glicemia.length > 0
       ? Math.round(glicemia.reduce((s, r) => s + r.valor_mgdl, 0) / glicemia.length)
       : null;
 
-  // Dados de hoje
   const todayGlicemia = glicemia.filter(r => isToday(r.created_at));
   const lastGlicemia = todayGlicemia[todayGlicemia.length - 1];
   const todayMeals = meals.filter(m => isToday(m.created_at));
   const totalCarbosHoje = todayMeals.reduce((s, m) => s + m.total_carboidratos_g, 0);
 
-  // Primeira letra do nome ou email para o avatar
   const displayName = user?.name || user?.email || '';
   const avatarLetter = displayName.charAt(0).toUpperCase() || 'G';
   const firstName = displayName.split(' ')[0] || 'Usuário';
 
+  const s = makeStyles(colors);
+
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator color={colors.green} size="large" />
       </View>
     );
@@ -97,7 +96,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={s.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -107,79 +106,87 @@ export default function HomeScreen({ navigation }: Props) {
         />
       }>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={s.header}>
         <View>
-          <Text style={styles.greeting}>Olá, {firstName}! 👋</Text>
-          <Text style={styles.subGreeting}>Vamos cuidar da saúde hoje?</Text>
+          <Text style={s.greeting}>Olá, {firstName}!</Text>
+          <Text style={s.subGreeting}>Vamos cuidar da saúde hoje?</Text>
         </View>
-        <TouchableOpacity style={styles.avatar} onPress={signOut}>
-          <Text style={styles.avatarText}>{avatarLetter}</Text>
+        <TouchableOpacity
+          style={s.avatar}
+          onPress={() => (navigation as any).navigate('Perfil')}>
+          <Text style={s.avatarText}>{avatarLetter}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Card Glicemia */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardLabel}>Média de Glicemia</Text>
-          <Text style={styles.glicemiaValue}>
+      <View style={s.card}>
+        <View style={s.cardHeader}>
+          <Text style={s.cardLabel}>Média de Glicemia</Text>
+          <Text style={s.glicemiaValue}>
             {mediaGlicemia !== null ? `${mediaGlicemia} mg/dL` : '—'}
           </Text>
         </View>
         {chartData.length > 0 ? (
           <>
-            <View style={styles.chart}>
+            <View style={s.chart}>
               {chartData.map((r, i) => {
                 const pct = (r.valor_mgdl - chartMin) / chartRange;
                 const top = (1 - pct) * 48;
                 return (
-                  <View key={i} style={styles.chartCol}>
-                    <View style={[styles.chartDot, { marginTop: top }]} />
+                  <View key={i} style={s.chartCol}>
+                    <View style={[s.chartDot, { marginTop: top }]} />
                   </View>
                 );
               })}
             </View>
-            <View style={styles.chartLabels}>
+            <View style={s.chartLabels}>
               {chartData.map((r, i) => (
-                <Text key={i} style={styles.chartLabel}>
+                <Text key={i} style={s.chartLabel}>
                   {DAY_LABELS[new Date(r.created_at).getDay()]}
                 </Text>
               ))}
             </View>
           </>
         ) : (
-          <Text style={styles.emptyText}>Nenhum registro ainda</Text>
+          <Text style={s.emptyText}>Nenhum registro ainda</Text>
         )}
       </View>
 
       {/* Resumo do Dia */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Resumo do Dia</Text>
-        <View style={styles.resumoRow}>
-          <View>
-            <Text style={styles.resumoValue}>
+      <View style={s.card}>
+        <Text style={s.sectionTitle}>Resumo do Dia</Text>
+        <View style={s.resumoRow}>
+          <View style={s.resumoItem}>
+            <MaterialCommunityIcons name="water-outline" size={20} color={colors.textMuted} />
+            <Text style={s.resumoValue}>
               {lastGlicemia ? lastGlicemia.valor_mgdl : '—'}
             </Text>
-            <Text style={styles.resumoLabel}>Glicemia</Text>
+            <Text style={s.resumoLabel}>Glicemia</Text>
           </View>
-          <View>
-            <Text style={styles.resumoValue}>
+          <View style={s.resumoItem}>
+            <MaterialCommunityIcons name="food-apple-outline" size={20} color={colors.textMuted} />
+            <Text style={s.resumoValue}>
               {totalCarbosHoje > 0 ? `${totalCarbosHoje}g` : '—'}
             </Text>
-            <Text style={styles.resumoLabel}>Carbos hoje</Text>
+            <Text style={s.resumoLabel}>Carbos hoje</Text>
           </View>
         </View>
       </View>
 
       {/* O que vamos fazer? */}
-      <Text style={styles.actionsTitle}>O que vamos fazer?</Text>
-      <View style={styles.grid}>
+      <Text style={s.actionsTitle}>O que vamos fazer?</Text>
+      <View style={s.grid}>
         {actions.map((item, i) => (
           <TouchableOpacity
             key={i}
-            style={styles.actionCard}
+            style={s.actionCard}
             onPress={() => item.screen && (navigation as any).navigate(item.screen)}>
-            <MaterialCommunityIcons name={item.icon} size={32} color={item.color} />
-            <Text style={styles.actionLabel}>{item.label}</Text>
+            <MaterialCommunityIcons
+              name={item.icon}
+              size={32}
+              color={(colors as any)[item.colorKey]}
+            />
+            <Text style={s.actionLabel}>{item.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -189,143 +196,32 @@ export default function HomeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  greeting: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  subGreeting: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: colors.background,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardLabel: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  glicemiaValue: {
-    color: colors.green,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  chart: {
-    flexDirection: 'row',
-    height: 60,
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
-  chartCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  chartDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.green,
-  },
-  chartLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    marginTop: 4,
-  },
-  chartLabel: {
-    color: colors.textMuted,
-    fontSize: 11,
-    flex: 1,
-    textAlign: 'center',
-  },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    textAlign: 'center',
-    paddingVertical: 8,
-  },
-  sectionTitle: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  resumoRow: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  resumoValue: {
-    color: colors.white,
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  resumoLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  actionsTitle: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  actionCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    width: '47%',
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    gap: 10,
-  },
-  actionLabel: {
-    color: colors.white,
-    fontSize: 13,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-});
+function makeStyles(colors: any) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 16 },
+    greeting: { fontSize: 20, fontWeight: '700', color: colors.white },
+    subGreeting: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
+    avatarText: { color: colors.background, fontWeight: '700', fontSize: 16 },
+    card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    cardLabel: { color: colors.textMuted, fontSize: 13 },
+    glicemiaValue: { color: colors.green, fontSize: 18, fontWeight: '700' },
+    chart: { flexDirection: 'row', height: 60, alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 8 },
+    chartCol: { flex: 1, alignItems: 'center' },
+    chartDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.green },
+    chartLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8, marginTop: 4 },
+    chartLabel: { color: colors.textMuted, fontSize: 11, flex: 1, textAlign: 'center' },
+    emptyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 8 },
+    sectionTitle: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 12 },
+    resumoRow: { flexDirection: 'row', gap: 32 },
+    resumoItem: { alignItems: 'flex-start', gap: 4 },
+    resumoValue: { color: colors.white, fontSize: 28, fontWeight: '700' },
+    resumoLabel: { color: colors.textMuted, fontSize: 12 },
+    actionsTitle: { color: colors.white, fontSize: 16, fontWeight: '600', marginBottom: 12, marginTop: 4 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    actionCard: { backgroundColor: colors.card, borderRadius: 16, width: '47%', paddingVertical: 24, paddingHorizontal: 16, alignItems: 'center', gap: 10 },
+    actionLabel: { color: colors.white, fontSize: 13, fontWeight: '500', textAlign: 'center' },
+  });
+}
