@@ -1,7 +1,7 @@
-// Troque pelo IP da sua máquina na rede local ao rodar em dispositivo físico
-// Ex: 'http://192.168.1.100:5001'
-// Em emulador Android use: 'http://10.0.2.2:5001'
-export const BASE_URL = 'http://localhost:5001';
+const DEV_URL = 'http://localhost:5001';
+const PROD_URL = 'https://back-end-production-xxxx.up.railway.app'; // trocar pela URL real do Railway após o deploy
+
+export const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;
 
 let authToken: string | null = null;
 
