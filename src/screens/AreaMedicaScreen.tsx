@@ -10,6 +10,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 function calcStats(registros: GlicemiaRecord[]) {
   if (registros.length === 0) return null;
@@ -55,7 +57,8 @@ export default function AreaMedicaScreen() {
   const s = makeStyles(colors);
 
   return (
-    <ScrollView
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <ScrollView
       style={s.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />
@@ -149,6 +152,7 @@ export default function AreaMedicaScreen() {
 
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

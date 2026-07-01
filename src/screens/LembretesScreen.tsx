@@ -6,6 +6,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
 import { getLembretes, saveLembretes, Lembrete } from '../services/storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const ICONS = [
   { icon: 'needle', label: 'Insulina' },
@@ -84,7 +86,8 @@ export default function LembretesScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <View style={s.flex}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <View style={s.flex}>
       <ScrollView style={s.container}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}>
           <MaterialCommunityIcons name="arrow-left" size={20} color={colors.white} />
@@ -200,6 +203,7 @@ export default function LembretesScreen({ navigation }: any) {
         </View>
       </Modal>
     </View>
+    </SafeAreaView>
   );
 }
 

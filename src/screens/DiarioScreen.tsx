@@ -6,6 +6,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
 import { getEntradas, saveEntrada, deleteEntrada, EntradaDiario } from '../services/storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const HUMORES: { key: EntradaDiario['humor']; icon: string; label: string; color: string }[] = [
   { key: 'otimo', icon: 'emoticon-excited-outline', label: 'Ótimo', color: '#39FF7E' },
@@ -86,7 +88,8 @@ export default function DiarioScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <View style={s.flex}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <View style={s.flex}>
       <ScrollView style={s.container}>
         <View style={s.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}>
@@ -178,6 +181,7 @@ export default function DiarioScreen({ navigation }: any) {
         </View>
       </Modal>
     </View>
+    </SafeAreaView>
   );
 }
 

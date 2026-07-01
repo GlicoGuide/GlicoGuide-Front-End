@@ -18,6 +18,8 @@ import { launchCamera } from 'react-native-image-picker';
 import { analisarPrato, AnaliseResult } from '../services/api';
 import { salvarUltimaAnalise } from '../services/storage';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function AnaliseDePratoScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -84,7 +86,8 @@ export default function AnaliseDePratoScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={s.container} keyboardShouldPersistTaps="handled">
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}>
           <MaterialCommunityIcons name="arrow-left" size={20} color={colors.white} />
@@ -211,6 +214,7 @@ export default function AnaliseDePratoScreen({ navigation }: any) {
         <View style={{ height: 32 }} />
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import {
   getUltimaAnalise, UltimaAnalise,
   getSessoesCarbo, salvarSessaoCarbo, deletarSessaoCarbo, SessaoCarbo, ItemHistorico,
@@ -192,7 +194,8 @@ export default function ContarCarboScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <View style={s.flex}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <View style={s.flex}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}>
@@ -479,6 +482,7 @@ export default function ContarCarboScreen({ navigation }: any) {
         </ScrollView>
       )}
     </View>
+    </SafeAreaView>
   );
 }
 

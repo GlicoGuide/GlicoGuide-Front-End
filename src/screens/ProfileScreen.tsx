@@ -14,6 +14,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getGlicemia, GlicemiaRecord } from '../services/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const PONTOS = 350;
 
@@ -80,7 +82,8 @@ export default function ProfileScreen() {
   const s = makeStyles(colors);
 
   return (
-    <ScrollView
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <ScrollView
       style={s.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -184,6 +187,7 @@ export default function ProfileScreen() {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

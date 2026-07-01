@@ -14,6 +14,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function LoginScreen() {
   const { signIn, signUp } = useAuth();
@@ -74,7 +76,8 @@ export default function LoginScreen() {
   const s = makeStyles(colors);
 
   return (
-    <KeyboardAvoidingView
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <KeyboardAvoidingView
       style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
@@ -180,6 +183,7 @@ export default function LoginScreen() {
 
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

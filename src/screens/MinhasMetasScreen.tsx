@@ -7,6 +7,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { getGlicemia, getMeals } from '../services/api';
 import { getMetasCustom, saveMetasCustom, MetaCustom } from '../services/storage';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 function isToday(dateStr: string) {
   const d = new Date(dateStr);
@@ -116,7 +118,8 @@ export default function MinhasMetasScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <View style={s.flex}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <View style={s.flex}>
       <ScrollView
         style={s.container}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />}>
@@ -255,6 +258,7 @@ export default function MinhasMetasScreen({ navigation }: any) {
         </View>
       </Modal>
     </View>
+    </SafeAreaView>
   );
 }
 

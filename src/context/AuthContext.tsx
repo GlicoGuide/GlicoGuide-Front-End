@@ -16,25 +16,16 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-function decodeJwtName(token: string): string {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.name || '';
-  } catch {
-    return '';
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
 
   async function signIn(email: string, password: string) {
-    const jwt = await apiLogin(email, password);
+    // O backend retorna token + name + email diretamente
+    const { token: jwt, name, email: userEmail } = await apiLogin(email, password);
     setToken(jwt);
     setTokenState(jwt);
-    const name = decodeJwtName(jwt) || email.split('@')[0];
-    setUser({ email, name });
+    setUser({ email: userEmail, name: name || userEmail.split('@')[0] });
   }
 
   async function signUp(name: string, email: string, password: string) {

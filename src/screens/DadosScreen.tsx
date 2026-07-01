@@ -13,6 +13,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getGlicemia, registrarGlicemia, GlicemiaRecord } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
@@ -81,7 +83,8 @@ export default function DadosScreen() {
   const s = makeStyles(colors);
 
   return (
-    <ScrollView
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <ScrollView
       style={s.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />
@@ -162,6 +165,7 @@ export default function DadosScreen() {
 
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

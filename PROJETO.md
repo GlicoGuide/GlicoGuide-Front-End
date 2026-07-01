@@ -1,285 +1,145 @@
 # GlicoGuide — Documentação do Projeto
 
-App mobile de gerenciamento de diabetes. Analisa fotos de refeições com IA (GPT-4o), estima carboidratos e calcula a dose de insulina bolus.
+App mobile para gerenciamento de diabetes. Analisa fotos de refeições com IA (GPT-4o), estima carboidratos e calcula a dose de insulina bolus.
+
+Construído com React Native 0.84.1 + TypeScript.
 
 ---
 
-## O que foi implementado
+## Status de Implementação
 
 ### Infraestrutura
 - [x] React Native 0.84.1 com New Architecture
 - [x] TypeScript em todo o projeto
 - [x] Sistema de tema claro/escuro (ThemeContext + makeStyles)
 - [x] Contexto de autenticação JWT (AuthContext)
-- [x] Serviço de API centralizado (`src/services/api.ts`)
-- [x] Serviço de storage local (`src/services/storage.ts`) com AsyncStorage v2.1.2
+- [x] Serviço de API centralizado (`src/services/api.ts`) com URLs separadas para dev e prod
+- [x] Serviço de storage local (`src/services/storage.ts`) com AsyncStorage 2.1.2
 - [x] Navegação por abas (5 abas) + stack dentro da aba Início
-- [x] Ícones com MaterialCommunityIcons (sem emojis)
-- [x] Ícone do app gerado a partir do logo SVG (Inkscape)
-- [x] Nome do APK: "GlicoGuide"
+- [x] Ícones com MaterialCommunityIcons
+- [x] Ícone do app gerado a partir do logo
+- [x] SafeAreaView em todas as telas (compatível com Dynamic Island e notch)
+- [x] Nome do app: "GlicoGuide" | Bundle ID: `com.willianarruda.glicoguide`
 
 ### Telas
 
-| Tela | Funcionalidades |
-|------|----------------|
-| **Login / Cadastro** | Tab toggle Entrar/Criar Conta, validação, integração real com API |
-| **Home** | Dashboard com stats de glicemia, grid de ações, avatar navega ao Perfil |
-| **Perfil** | Avatar, GlicoPoints (350), stats de glicemia real, toggle dark/light mode, signOut |
-| **Dados** | Tela de registros e gráficos (visual pronto) |
-| **Chat (Glico AI)** | Interface de chat, sem integração de IA ainda |
-| **Análise de Prato** | Câmera, glicemia atual, **peso do prato (novo)**, análise com GPT-4o, resultado com carbos + insulina, salva no histórico |
-| **Relatório Mensal** | Dados reais da API, navegação mês a mês, top alimentos, refeições com mais carbo |
-| **Lembretes** | AsyncStorage, adicionar/deletar, toggle ativo/inativo, ordenado por horário |
-| **Minhas Metas** | Metas fixas + metas customizadas (AsyncStorage), toggle concluída, deletar |
-| **Diário** | CRUD completo, 5 níveis de humor com cores/ícones, editar tocando, deletar com pressão longa |
-| **Contador de Carbo** | 2 abas: Contador (alimentos base + IA + manual, cálculo bolus) e Histórico (agrupado por dia, separado por IA/manual) |
-| **Loja Glico** | Visual de gamificação (mock) |
-| **Área Médica** | Stats clínicos e ações rápidas (mock) |
+| Tela | Status | Observação |
+|------|--------|-----------|
+| Login / Cadastro | ✅ Completo | Integração real com API |
+| Home | ✅ Completo | Dashboard com stats de glicemia |
+| Perfil | ⚠️ Parcial | GlicoPoints exibe valor fixo (backend pendente) |
+| Dados | ✅ Completo | Gráfico glicemia 7 dias, dados reais da API |
+| Chat (Glico AI) | ⚠️ Parcial | Interface pronta, integração com backend pendente |
+| Análise de Prato | ✅ Completo | Câmera + GPT-4o + cálculo de bolus |
+| Relatório Mensal | ✅ Completo | Dados reais, navegação mês a mês |
+| Lembretes | ⚠️ Parcial | AsyncStorage funcional, notificações reais pendentes |
+| Minhas Metas | ✅ Completo | Metas fixas + customizadas com AsyncStorage |
+| Diário | ✅ Completo | CRUD + 5 níveis de humor |
+| Contador de Carbo | ✅ Completo | Manual + IA + histórico por dia |
+| Loja Glico | ⏳ Mock | Aguarda sistema de GlicoPoints no backend |
+| Área Médica | ⏳ Mock | Aguarda endpoint de estatísticas clínicas |
 
 ---
 
-## O que falta fazer
+## Roadmap (pendências)
 
-### Prioritário (bloqueia produção)
-- [ ] **Persistência de sessão** — token JWT fica em memória RAM, some ao fechar o app. Implementar com `react-native-keychain`
-- [ ] **HTTPS** — backend precisa de TLS antes de produção (dados de saúde não podem trafegar em HTTP claro)
-- [ ] **Keystore de produção** — hoje o release APK usa `debug.keystore`. Gerar uma keystore própria para publicar na Play Store
+### Bloqueia produção
+- [ ] **Persistência de sessão** — token JWT em memória RAM, some ao fechar o app → `react-native-keychain`
+- [ ] **HTTPS** — backend precisa de TLS antes de publicar (dados de saúde)
+- [ ] **Keystore de produção** — APK ainda usa `debug.keystore` → gerar para Play Store
+- [ ] **URL de produção** — atualizar `PROD_URL` em `src/services/api.ts` após deploy
 
 ### Funcionalidades pendentes
-- [ ] **Chat com IA** — endpoint de chat ainda não existe no backend
-- [ ] **Notificações dos lembretes** — hoje são só alarmes visuais, sem push/local notification real
-- [ ] **Rota backend peso_prato** — frontend já envia `peso_prato_g`, backend não processa ainda
-- [ ] **Loja Glico** — sistema de GlicoPoints real (pontos por registros, metas cumpridas etc.)
-- [ ] **Área Médica** — conectar com dados reais da API
-- [ ] **Validação de e-mail** no formulário de login/cadastro
+- [ ] **Chat com IA** — backend criado, falta integrar no `ChatScreen`
+- [ ] **Alertas de glicemia** — backend retorna campo `alerta`, falta exibir no `DadosScreen` e `HomeScreen`
+- [ ] **GlicoPoints real** — backend com sistema de pontos, falta consumir no `ProfileScreen`
+- [ ] **Área Médica** — falta endpoint de estatísticas clínicas e integração na tela
+- [ ] **Notificações de lembretes** — falta implementar com `@notifee/react-native`
+- [ ] **Validação de e-mail** — adicionar regex de validação no formulário de login/cadastro
 
 ### Segurança (antes de publicar)
-- [ ] AsyncStorage sem criptografia — usar `react-native-mmkv` com chave ou `Encrypted SharedPreferences`
-- [ ] Limite de tentativas de login (proteção local contra força bruta)
+- [ ] AsyncStorage sem criptografia → migrar para `react-native-mmkv` com chave
+- [ ] Limite de tentativas de login no frontend
 
 ---
 
-## Pré-requisitos para rodar o projeto
-
-### Ferramentas necessárias
-
-| Ferramenta | Versão | Instalação |
-|------------|--------|------------|
-| Node.js | >= 22 | https://nodejs.org ou `nvm install 22` |
-| JDK | 17 | https://adoptium.net |
-| Android Studio | Ladybug+ | https://developer.android.com/studio |
-| Xcode | 15+ *(só Mac)* | App Store |
-| CocoaPods | >= 1.15 *(só Mac)* | `sudo gem install cocoapods` |
-| Docker | qualquer | https://docs.docker.com/get-docker |
-| ADB | via Android Studio | incluso no Platform-Tools do SDK |
-
-### SDK Android necessário (via Android Studio → SDK Manager)
-- Android SDK Platform 35
-- Android SDK Build-Tools 35
-- Android SDK Platform-Tools
-- Android Emulator (se quiser emulador)
-
-### Variáveis de ambiente — adicionar ao `~/.zshrc` ou `~/.bashrc`
-
-**Linux:**
-```bash
-export ANDROID_HOME=$HOME/Android/Sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools
-export PATH=$PATH:$ANDROID_HOME/emulator
-```
-
-**Mac:**
-```bash
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools
-export PATH=$PATH:$ANDROID_HOME/emulator
-```
-
-Depois: `source ~/.zshrc`
-
----
-
-## Como rodar o projeto
-
-### 1. Clonar e instalar
-
-```bash
-git clone git@github.com:GlicoGuide/glicoguideapp.git
-cd glicoguideapp
-npm install
-```
-
-### 2. Criar o arquivo android/local.properties
-
-```bash
-# Linux
-echo "sdk.dir=$HOME/Android/Sdk" > android/local.properties
-
-# Mac
-echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
-```
-
-### 3. Subir o backend
-
-```bash
-# Na pasta do backend (repositório separado)
-git clone git@github.com:GlicoGuide/Back-End.git
-cd Back-End
-docker-compose up -d
-docker-compose exec app flask --app app db upgrade
-```
-
-O backend ficará disponível em `http://localhost:5001`.
-
----
-
-## Rodar no Android
-
-### Opção A — Emulador (Android Studio)
-
-1. Abra o Android Studio → Device Manager → crie um Pixel 8 API 35
-2. Inicie o emulador
-3. Em um terminal:
-```bash
-npm run android
-```
-
-O Metro e o build rodam juntos. A URL do backend no emulador é `http://10.0.2.2:5001` — troque em `src/services/api.ts` se estiver usando emulador.
-
-### Opção B — Celular físico via USB (recomendado)
-
-1. No celular: Configurações → Sobre o telefone → toque 7x em "Número da versão" → Opções do desenvolvedor → ative "Depuração USB"
-2. Conecte o celular via USB e autorize o computador
-3. Terminal 1 — redirecionar portas e iniciar Metro:
-```bash
-adb reverse tcp:8081 tcp:8081
-adb reverse tcp:5001 tcp:5001
-npm start
-```
-4. Terminal 2 — fazer build e instalar:
-```bash
-cd android
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-5. Abra o app GlicoGuide no celular
-
-> **Rebuild obrigatório** sempre que instalar nova dependência nativa, alterar AndroidManifest.xml ou trocar ícones. Para mudanças só em JS/TSX, o hot reload via Metro já funciona.
-
----
-
-## Rodar no iOS (apenas Mac)
-
-```bash
-cd ios
-pod install
-cd ..
-npm run ios
-```
-
-Para celular físico iOS:
-1. Abra `ios/glicoguideapp.xcworkspace` no Xcode
-2. Configure o Team de assinatura (sua Apple ID)
-3. Conecte o iPhone, selecione como destino e clique em Run
-
----
-
-## Como usar o app
-
-### Primeiro acesso
-1. Abra o app → tela de Login
-2. Toque em **Criar Conta** → preencha nome, e-mail e senha (mín. 6 caracteres)
-3. O app faz login automaticamente após o cadastro
-
-### Análise de prato (funcionalidade principal)
-1. Na Home, toque em **Análise de Prato** (ou aba Saúde)
-2. Toque na área da câmera para fotografar sua refeição
-3. Preencha sua **glicemia atual** (obrigatório)
-4. Opcionalmente informe o **peso do prato em gramas**
-5. Toque em **Analisar Refeição** — a IA detecta os alimentos e calcula a insulina
-6. O resultado aparece abaixo com: alimentos detectados, carboidratos totais, insulina de refeição, insulina de correção e **insulina total**
-
-### Contador de Carbo (manual)
-1. Home → **Contador de Carbo**
-2. Aba **Contador**: selecione alimentos da lista ou adicione manualmente com a porção em gramas
-3. Os itens analisados pela IA na última sessão aparecem pré-selecionados
-4. Ajuste o **ratio** (g de carbo por unidade de insulina) e toque em **Salvar no histórico**
-5. Aba **Histórico**: veja sessões agrupadas por dia, expandindo para ver itens com origem IA ou manual
-
-### Lembretes
-- Toque no ícone de sino na Home → adicione lembretes de medicação ou medição
-- Pressione longo para deletar um lembrete
-
-### Diário
-- Home → **Diário** → registre como está seu dia com texto e humor
-- Toque numa entrada para editar; pressione longo para deletar
-
-### Metas
-- Home → **Minhas Metas** → toggle para marcar metas como concluídas
-- Toque no **+** para criar metas personalizadas
-
-### Relatório Mensal
-- Home → **Relatório** → veja refeições agrupadas por mês com estatísticas
-- Use as setas para navegar entre meses
-
-### Perfil
-- Toque no avatar no canto superior direito da Home
-- Alterne entre modo claro e escuro
-- Faça logout
-
----
-
-## Estrutura de pastas
+## Estrutura de Pastas
 
 ```
 glicoguideapp/
-├── android/                    → build Android
-├── ios/                        → build iOS
+├── android/                    → build Android nativo
+├── ios/                        → build iOS nativo
 ├── src/
 │   ├── context/
-│   │   ├── AuthContext.tsx     → autenticação (signIn, signUp, signOut, token)
+│   │   ├── AuthContext.tsx     → autenticação (signIn, signUp, signOut, token JWT)
 │   │   └── ThemeContext.tsx    → tema claro/escuro
 │   ├── navigation/
-│   │   ├── AppNavigator.tsx    → Login → MainTabs
+│   │   ├── AppNavigator.tsx    → raiz: sem auth → Login, com auth → MainTabs
 │   │   └── HomeStack.tsx       → stack das sub-telas da Home
-│   ├── screens/                → uma tela por arquivo
+│   ├── screens/                → 13 telas (uma por arquivo)
 │   ├── services/
-│   │   ├── api.ts              → chamadas HTTP ao backend
+│   │   ├── api.ts              → cliente HTTP (DEV/PROD URLs, funções tipadas)
 │   │   └── storage.ts          → AsyncStorage (lembretes, diário, metas, histórico)
 │   └── theme/
 │       └── themes.ts           → darkTheme e lightTheme
-├── PROJETO.md                  → este arquivo
-└── SETUP.md                    → setup rápido em novo PC
+├── README.md                   → visão geral e comandos rápidos
+├── PROJETO.md                  → este arquivo (status e roadmap)
+├── BACKEND.md                  → tarefas pendentes do backend
+└── SETUP.md                    → setup em novo computador
 ```
 
 ---
 
-## Comandos úteis
+## Configuração da API
 
-```bash
-# Rodar no Android (emulador aberto)
-npm run android
+Arquivo: `src/services/api.ts`
 
-# Build APK debug manual
-cd android && ./gradlew assembleDebug
+```ts
+const DEV_URL  = 'http://<IP_DO_MAC>:5001';   // atualizar conforme rede
+const PROD_URL = 'https://...railway.app';     // atualizar após deploy
+```
 
-# Instalar APK no celular
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+### IP do Mac por cenário
 
-# Redirecionar portas para celular físico
-adb reverse tcp:8081 tcp:8081 && adb reverse tcp:5001 tcp:5001
+| Cenário | IP a usar | Como obter |
+|---|---|---|
+| iOS Simulador | `localhost` | — |
+| iOS cabo (mesma rede) | IP local do Mac | `ipconfig getifaddr en0` |
+| iOS cabo (rede corporativa) | IP do hotspot do iPhone | ativar Acesso Pessoal, `ipconfig getifaddr en0` |
+| Android Emulador | `10.0.2.2` | fixo no emulador |
+| Android USB | `localhost` (após `adb reverse`) | — |
 
-# Limpar cache do Metro
-npm start -- --reset-cache
+---
 
-# Limpar build Android
-cd android && ./gradlew clean
+## Fluxo de Autenticação
 
-# Ver dispositivos conectados
-adb devices
+```
+LoginScreen
+    ↓ signIn(email, password)
+AuthContext → apiLogin() → POST /api/auth/login
+    ↓ token JWT retornado
+setToken(jwt) → armazenado em memória (variável do módulo api.ts)
+    ↓
+AppNavigator detecta token → navega para MainTabs
+```
 
-# Backend
-docker-compose up -d        # subir
-docker-compose down         # parar
-docker-compose logs -f app  # ver logs
+> Token fica em memória RAM. Ao fechar o app o usuário precisa fazer login novamente.
+> Solução pendente: `react-native-keychain` para persistência segura.
+
+---
+
+## Fluxo de Análise de Prato
+
+```
+AnaliseDePratoScreen
+    ↓ usuário fotografa refeição + informa glicemia atual
+analisarPrato(imagemUri, glicemiaAtual, pesoPrato?)
+    ↓ POST /api/insulin/calcular (multipart/form-data)
+Backend: GPT-4o analisa imagem → identifica alimentos → estima carboidratos
+    ↓
+Backend: calcula bolus de refeição + correção glicêmica
+    ↓
+Backend: salva Meal + MealItems no banco
+    ↓
+App exibe: alimentos detectados, carboidratos totais, dose de insulina
 ```

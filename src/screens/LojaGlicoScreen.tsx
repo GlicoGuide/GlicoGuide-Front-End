@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const recompensas = [
   { id: 1, nome: 'Mudar Avatar', desc: 'Desbloqueie novos avatares divertidos...', pontos: 500, icon: 'account-edit-outline' },
@@ -15,7 +17,8 @@ export default function LojaGlicoScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <ScrollView style={s.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <ScrollView style={s.container}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={22} color={colors.white} />
@@ -66,6 +69,7 @@ export default function LojaGlicoScreen({ navigation }: any) {
 
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { HomeStackParamList } from '../navigation/HomeStack';
@@ -95,8 +96,8 @@ export default function HomeScreen({ navigation }: Props) {
   }
 
   return (
+    <SafeAreaView style={s.container} edges={['top']}>
     <ScrollView
-      style={s.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -193,6 +194,7 @@ export default function HomeScreen({ navigation }: Props) {
 
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

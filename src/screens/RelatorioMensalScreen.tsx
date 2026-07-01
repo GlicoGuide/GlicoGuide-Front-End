@@ -5,6 +5,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -90,7 +92,8 @@ export default function RelatorioMensalScreen({ navigation }: any) {
   const s = makeStyles(colors);
 
   return (
-    <ScrollView
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <ScrollView
       style={s.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />}>
 
@@ -189,6 +192,7 @@ export default function RelatorioMensalScreen({ navigation }: any) {
       )}
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
