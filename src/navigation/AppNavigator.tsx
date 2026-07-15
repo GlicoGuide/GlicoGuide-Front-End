@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -65,11 +66,22 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { token } = useAuth();
+  const { token, isLoading } = useAuth();
+  const { colors } = useTheme();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.green} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        {/* token vem do AuthContext, que já restaurou a sessão do Keychain
+            antes de isLoading virar false — por isso não pisca tela de login */}
         {token ? (
           <RootStack.Screen name="Main" component={MainTabs} />
         ) : (

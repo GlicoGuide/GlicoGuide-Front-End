@@ -80,6 +80,8 @@ npm start -- --reset-cache       # Metro com cache limpo
 npm run ios                      # iOS simulador
 npm run ios -- --device          # iOS dispositivo físico
 npm run android                  # Android
+npm test                         # Testes (Jest)
+npm run lint                     # ESLint
 ```
 
 ---
@@ -88,4 +90,5 @@ npm run android                  # Android
 
 - [`PROJETO.md`](./PROJETO.md) — telas, funcionalidades, arquitetura e roadmap
 - [`SETUP.md`](./SETUP.md) — setup detalhado em novo PC
-- [`BACKEND.md`](./BACKEND.md) — tarefas pendentes do backend
+- [`BACKEND.md`](./BACKEND.md) — referência do backend do ponto de vista do app
+- [`LGPD.md`](./LGPD.md) — conformidade com a LGPD

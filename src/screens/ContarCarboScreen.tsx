@@ -61,7 +61,7 @@ function agruparPorDia(sessoes: SessaoCarbo[]): { label: string; sessoes: Sessao
     if (!grupos[dia]) grupos[dia] = [];
     grupos[dia].push(s);
   });
-  return Object.entries(grupos).map(([dia, sess]) => ({
+  return Object.values(grupos).map(sess => ({
     label: formatDiaLabel(sess[0].data),
     sessoes: sess,
   }));

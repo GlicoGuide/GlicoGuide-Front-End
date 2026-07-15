@@ -6,6 +6,10 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
 import { getLembretes, saveLembretes, Lembrete } from '../services/storage';
+import {
+  solicitarPermissaoNotificacao, sincronizarNotificacoes,
+  agendarNotificacao, cancelarNotificacao,
+} from '../services/notifications';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -32,6 +36,9 @@ export default function LembretesScreen({ navigation }: any) {
     const data = await getLembretes();
     setLembretes(data);
     setLoading(false);
+
+    const permitido = await solicitarPermissaoNotificacao();
+    if (permitido) await sincronizarNotificacoes(data);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -40,6 +47,8 @@ export default function LembretesScreen({ navigation }: any) {
     const updated = lembretes.map(l => l.id === id ? { ...l, ativo: !l.ativo } : l);
     setLembretes(updated);
     await saveLembretes(updated);
+    const alterado = updated.find(l => l.id === id);
+    if (alterado) await agendarNotificacao(alterado);
   }
 
   async function handleAdicionar() {
@@ -63,6 +72,7 @@ export default function LembretesScreen({ navigation }: any) {
     const updated = [...lembretes, novo].sort((a, b) => a.horario.localeCompare(b.horario));
     setLembretes(updated);
     await saveLembretes(updated);
+    await agendarNotificacao(novo);
     setNome('');
     setHorario('');
     setIconSelecionado('needle');
@@ -78,6 +88,7 @@ export default function LembretesScreen({ navigation }: any) {
           const updated = lembretes.filter(l => l.id !== id);
           setLembretes(updated);
           await saveLembretes(updated);
+          await cancelarNotificacao(id);
         },
       },
     ]);

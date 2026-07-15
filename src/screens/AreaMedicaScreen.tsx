@@ -8,32 +8,21 @@ import {
   RefreshControl,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
+import { getResumoMedico, ResumoMedico } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
-function calcStats(registros: GlicemiaRecord[]) {
-  if (registros.length === 0) return null;
-  const media = Math.round(registros.reduce((s, r) => s + r.valor_mgdl, 0) / registros.length);
-  const noAlvo = registros.filter(r => r.valor_mgdl >= 70 && r.valor_mgdl <= 180).length;
-  const tempoNoAlvo = Math.round((noAlvo / registros.length) * 100);
-  const hipo = registros.filter(r => r.valor_mgdl < 70).length;
-  return { media, tempoNoAlvo, hipo };
-}
-
 export default function AreaMedicaScreen() {
   const { colors } = useTheme();
-  const [glicemia, setGlicemia] = useState<GlicemiaRecord[]>([]);
-  const [meals, setMeals] = useState<Meal[]>([]);
+  const [resumo, setResumo] = useState<ResumoMedico | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [g, m] = await Promise.all([getGlicemia(), getMeals()]);
-      setGlicemia(g);
-      setMeals(m);
+      const data = await getResumoMedico();
+      setResumo(data);
     } catch {
       // mantém dados anteriores
     } finally {
@@ -44,15 +33,14 @@ export default function AreaMedicaScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const stats = calcStats(glicemia);
-  const totalCarbs = meals.reduce((s, m) => s + m.total_carboidratos_g, 0);
-  const mediaCarbs = meals.length > 0 ? Math.round(totalCarbs / meals.length) : null;
+  const glicemia = resumo?.glicemia;
+  const refeicoes = resumo?.refeicoes;
 
-  const faixas = [
-    { label: 'Hipoglicemia (< 70)', count: glicemia.filter(r => r.valor_mgdl < 70).length, color: colors.red, icon: 'arrow-down-circle-outline' },
-    { label: 'Normal (70–180)', count: glicemia.filter(r => r.valor_mgdl >= 70 && r.valor_mgdl <= 180).length, color: colors.green, icon: 'check-circle-outline' },
-    { label: 'Alta (> 180)', count: glicemia.filter(r => r.valor_mgdl > 180).length, color: colors.yellow, icon: 'arrow-up-circle-outline' },
-  ];
+  const faixas = glicemia ? [
+    { label: 'Hipoglicemia (< 70)', count: glicemia.faixas.hipoglicemia, color: colors.red, icon: 'arrow-down-circle-outline' },
+    { label: 'Normal (70–180)', count: glicemia.faixas.normal, color: colors.green, icon: 'check-circle-outline' },
+    { label: 'Alta (> 180)', count: glicemia.faixas.alta, color: colors.yellow, icon: 'arrow-up-circle-outline' },
+  ] : [];
 
   const s = makeStyles(colors);
 
@@ -74,23 +62,23 @@ export default function AreaMedicaScreen() {
               <MaterialCommunityIcons name="water-outline" size={20} color={colors.blue} />
               <Text style={s.cardTitle}>Glicemia</Text>
             </View>
-            <Text style={s.cardSub}>Baseado em {glicemia.length} medição{glicemia.length !== 1 ? 'ões' : ''}</Text>
+            <Text style={s.cardSub}>
+              Baseado em {glicemia?.total_medicoes ?? 0} medição{glicemia?.total_medicoes !== 1 ? 'ões' : ''}
+            </Text>
 
-            {stats ? (
+            {glicemia && glicemia.total_medicoes > 0 ? (
               <View style={s.statsRow}>
                 <View style={s.stat}>
-                  <Text style={[s.statValue, { color: colors.green }]}>{stats.tempoNoAlvo}%</Text>
+                  <Text style={[s.statValue, { color: colors.green }]}>{glicemia.tempo_no_alvo_pct}%</Text>
                   <Text style={s.statLabel}>Tempo no{'\n'}Alvo</Text>
                 </View>
                 <View style={s.stat}>
-                  <Text style={s.statValue}>{stats.media}</Text>
+                  <Text style={s.statValue}>{glicemia.media_mgdl}</Text>
                   <Text style={s.statLabel}>Média{'\n'}mg/dL</Text>
                 </View>
                 <View style={s.stat}>
-                  <Text style={[s.statValue, { color: stats.hipo > 0 ? colors.red : colors.green }]}>
-                    {stats.hipo}
-                  </Text>
-                  <Text style={s.statLabel}>Hipoglicemias</Text>
+                  <Text style={[s.statValue, { color: colors.purple }]}>{glicemia.hba1c_estimada_pct}%</Text>
+                  <Text style={s.statLabel}>HbA1c{'\n'}estimada</Text>
                 </View>
               </View>
             ) : (
@@ -106,20 +94,22 @@ export default function AreaMedicaScreen() {
               <MaterialCommunityIcons name="food-fork-drink" size={20} color={colors.orange} />
               <Text style={s.cardTitle}>Refeições</Text>
             </View>
-            <Text style={s.cardSub}>Baseado em {meals.length} refeição{meals.length !== 1 ? 'ões' : ''} analisada{meals.length !== 1 ? 's' : ''}</Text>
+            <Text style={s.cardSub}>
+              Baseado em {refeicoes?.total ?? 0} refeição{refeicoes?.total !== 1 ? 'ões' : ''} analisada{refeicoes?.total !== 1 ? 's' : ''}
+            </Text>
 
-            {meals.length > 0 ? (
+            {refeicoes && refeicoes.total > 0 ? (
               <View style={s.statsRow}>
                 <View style={s.stat}>
-                  <Text style={s.statValue}>{meals.length}</Text>
+                  <Text style={s.statValue}>{refeicoes.total}</Text>
                   <Text style={s.statLabel}>Refeições{'\n'}registradas</Text>
                 </View>
                 <View style={s.stat}>
-                  <Text style={s.statValue}>{mediaCarbs}g</Text>
+                  <Text style={s.statValue}>{refeicoes.media_carboidratos_g}g</Text>
                   <Text style={s.statLabel}>Média de{'\n'}carboidratos</Text>
                 </View>
                 <View style={s.stat}>
-                  <Text style={s.statValue}>{totalCarbs}g</Text>
+                  <Text style={s.statValue}>{refeicoes.total_carboidratos_g}g</Text>
                   <Text style={s.statLabel}>Total de{'\n'}carboidratos</Text>
                 </View>
               </View>
@@ -131,7 +121,7 @@ export default function AreaMedicaScreen() {
             )}
           </View>
 
-          {stats && (
+          {glicemia && glicemia.total_medicoes > 0 && (
             <View style={s.card}>
               <View style={s.cardTitleRow}>
                 <MaterialCommunityIcons name="chart-pie" size={20} color={colors.purple} />

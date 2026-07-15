@@ -14,26 +14,13 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { getGlicemia, registrarGlicemia, GlicemiaRecord } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { alertaVisual, classificarNivel, precisaAtencao } from '../utils/alerta';
 
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
     ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function statusGlicemia(valor: number) {
-  if (valor < 70) return { label: 'Baixa', icon: 'arrow-down-circle-outline' };
-  if (valor <= 140) return { label: 'Normal', icon: 'check-circle-outline' };
-  if (valor <= 180) return { label: 'Alta', icon: 'arrow-up-circle-outline' };
-  return { label: 'Muito alta', icon: 'alert-circle-outline' };
-}
-
-function statusColor(valor: number, colors: any) {
-  if (valor < 70) return colors.red;
-  if (valor <= 140) return colors.green;
-  if (valor <= 180) return colors.yellow;
-  return colors.red;
 }
 
 export default function DadosScreen() {
@@ -80,6 +67,9 @@ export default function DadosScreen() {
     ? Math.round(registros.reduce((s, r) => s + r.valor_mgdl, 0) / registros.length)
     : null;
 
+  const ultimoRegistro = registros[registros.length - 1];
+  const mediaVisual = media !== null ? alertaVisual(classificarNivel(media), colors) : null;
+
   const s = makeStyles(colors);
 
   return (
@@ -90,6 +80,20 @@ export default function DadosScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />
       }>
       <Text style={s.title}>Glicemia</Text>
+
+      {/* Alerta da última medição */}
+      {ultimoRegistro && precisaAtencao(ultimoRegistro.alerta.nivel) && (
+        <View style={[s.alertBanner, { backgroundColor: alertaVisual(ultimoRegistro.alerta.nivel, colors).color + '22' }]}>
+          <MaterialCommunityIcons
+            name={alertaVisual(ultimoRegistro.alerta.nivel, colors).icon}
+            size={22}
+            color={alertaVisual(ultimoRegistro.alerta.nivel, colors).color}
+          />
+          <Text style={[s.alertText, { color: alertaVisual(ultimoRegistro.alerta.nivel, colors).color }]}>
+            {ultimoRegistro.alerta.mensagem}
+          </Text>
+        </View>
+      )}
 
       {/* Registrar */}
       <View style={s.card}>
@@ -118,15 +122,15 @@ export default function DadosScreen() {
       </View>
 
       {/* Média */}
-      {media !== null && (
+      {media !== null && mediaVisual && (
         <View style={s.card}>
           <Text style={s.sectionTitle}>Média geral</Text>
           <View style={s.mediaRow}>
             <Text style={s.mediaValue}>{media} <Text style={s.mediaUnit}>mg/dL</Text></Text>
-            <View style={[s.badge, { backgroundColor: statusColor(media, colors) + '33' }]}>
-              <MaterialCommunityIcons name={statusGlicemia(media).icon} size={14} color={statusColor(media, colors)} />
-              <Text style={[s.badgeText, { color: statusColor(media, colors) }]}>
-                {statusGlicemia(media).label}
+            <View style={[s.badge, { backgroundColor: mediaVisual.color + '33' }]}>
+              <MaterialCommunityIcons name={mediaVisual.icon} size={14} color={mediaVisual.color} />
+              <Text style={[s.badgeText, { color: mediaVisual.color }]}>
+                {mediaVisual.label}
               </Text>
             </View>
           </View>
@@ -145,17 +149,16 @@ export default function DadosScreen() {
           </View>
         ) : (
           registros.map(r => {
-            const color = statusColor(r.valor_mgdl, colors);
-            const st = statusGlicemia(r.valor_mgdl);
+            const visual = alertaVisual(r.alerta.nivel, colors);
             return (
               <View key={r.id} style={s.item}>
-                <MaterialCommunityIcons name="water-outline" size={20} color={color} />
+                <MaterialCommunityIcons name="water-outline" size={20} color={visual.color} />
                 <View style={s.itemInfo}>
                   <Text style={s.itemValor}>{r.valor_mgdl} mg/dL</Text>
                   <Text style={s.itemData}>{formatDate(r.created_at)}</Text>
                 </View>
-                <View style={[s.badge, { backgroundColor: color + '33' }]}>
-                  <Text style={[s.badgeText, { color }]}>{st.label}</Text>
+                <View style={[s.badge, { backgroundColor: visual.color + '33' }]}>
+                  <Text style={[s.badgeText, { color: visual.color }]}>{visual.label}</Text>
                 </View>
               </View>
             );
@@ -173,6 +176,8 @@ function makeStyles(colors: any) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     title: { color: colors.white, fontSize: 20, fontWeight: '700', marginTop: 16, marginBottom: 16 },
+    alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, padding: 14, marginBottom: 12 },
+    alertText: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },
     card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },
     sectionTitle: { color: colors.textMuted, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
     row: { flexDirection: 'row', gap: 10 },

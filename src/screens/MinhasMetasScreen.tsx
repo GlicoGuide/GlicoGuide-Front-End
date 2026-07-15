@@ -4,8 +4,11 @@ import {
   ActivityIndicator, RefreshControl, Modal, TextInput, Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { getGlicemia, getMeals } from '../services/api';
-import { getMetasCustom, saveMetasCustom, MetaCustom } from '../services/storage';
+import { getGlicemia, getMeals, creditarPontosMeta } from '../services/api';
+import {
+  getMetasCustom, saveMetasCustom, MetaCustom,
+  getMetasDiarias, saveMetasDiarias, MetasDiariasState,
+} from '../services/storage';
 import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -36,8 +39,7 @@ export default function MinhasMetasScreen({ navigation }: any) {
   const [glicemiaHoje, setGlicemiaHoje] = useState(0);
   const [refeicoesSemana, setRefeicoesSemana] = useState(0);
   const [mediaCarbs, setMediaCarbs] = useState(0);
-  const [aguaConcluida, setAguaConcluida] = useState(false);
-  const [atividadeConcluida, setAtividadeConcluida] = useState(false);
+  const [metasDiarias, setMetasDiarias] = useState<MetasDiariasState | null>(null);
   const [metasCustom, setMetasCustom] = useState<MetaCustom[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [novoNome, setNovoNome] = useState('');
@@ -46,7 +48,9 @@ export default function MinhasMetasScreen({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [glicemia, meals, custom] = await Promise.all([getGlicemia(), getMeals(), getMetasCustom()]);
+      const [glicemia, meals, custom, diarias] = await Promise.all([
+        getGlicemia(), getMeals(), getMetasCustom(), getMetasDiarias(),
+      ]);
       setGlicemiaHoje(glicemia.filter(r => isToday(r.created_at)).length);
       const semanaAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       setRefeicoesSemana(meals.filter(m => new Date(m.created_at) >= semanaAtras).length);
@@ -54,6 +58,7 @@ export default function MinhasMetasScreen({ navigation }: any) {
         setMediaCarbs(Math.round(meals.reduce((s, m) => s + m.total_carboidratos_g, 0) / meals.length));
       }
       setMetasCustom(custom);
+      setMetasDiarias(diarias);
     } catch {
       // mantém dados anteriores
     } finally {
@@ -64,10 +69,48 @@ export default function MinhasMetasScreen({ navigation }: any) {
 
   useEffect(() => { load(); }, [load]);
 
+  async function creditarMetaConcluida() {
+    try {
+      const { pontos_creditados } = await creditarPontosMeta();
+      if (pontos_creditados > 0) {
+        Alert.alert('Meta concluída!', `Você ganhou ${pontos_creditados} GlicoPoints.`);
+      }
+    } catch {
+      // sem conexão: a meta continua marcada como concluída localmente
+    }
+  }
+
   async function toggleCustom(id: string) {
-    const updated = metasCustom.map(m => m.id === id ? { ...m, concluida: !m.concluida } : m);
+    // só credita pontos na transição pra "concluída" e só uma vez — o
+    // pontosCreditados fica true pra sempre, mesmo se o usuário desmarcar
+    // e marcar de novo depois (senão dava pra farmar GP só clicando)
+
+    let creditar = false;
+    const updated = metasCustom.map(m => {
+      if (m.id !== id) return m;
+      const concluida = !m.concluida;
+      if (concluida && !m.pontosCreditados) creditar = true;
+      return { ...m, concluida, pontosCreditados: m.pontosCreditados || concluida };
+    });
     setMetasCustom(updated);
     await saveMetasCustom(updated);
+    if (creditar) await creditarMetaConcluida();
+  }
+
+  // mesma lógica do toggleCustom acima, mas pras metas fixas do dia
+  // (água/atividade), que resetam sozinhas à meia-noite via storage.ts
+  async function toggleMetaDiaria(chave: 'agua' | 'atividade') {
+    if (!metasDiarias) return;
+    const atual = metasDiarias[chave];
+    const concluida = !atual.concluida;
+    const creditar = concluida && !atual.pontosCreditados;
+    const updated: MetasDiariasState = {
+      ...metasDiarias,
+      [chave]: { ...atual, concluida, pontosCreditados: atual.pontosCreditados || concluida },
+    };
+    setMetasDiarias(updated);
+    await saveMetasDiarias(updated);
+    if (creditar) await creditarMetaConcluida();
   }
 
   async function handleAddMeta() {
@@ -111,8 +154,8 @@ export default function MinhasMetasScreen({ navigation }: any) {
   ];
 
   const metasToggle = [
-    { id: 'agua', nome: 'Beber 2L de água', freq: 'Diário', icon: 'cup-water', iconColor: colors.cyan, concluida: aguaConcluida, onToggle: () => setAguaConcluida(v => !v) },
-    { id: 'atividade', nome: 'Atividade Física 30min', freq: 'Diário', icon: 'run', iconColor: colors.green, concluida: atividadeConcluida, onToggle: () => setAtividadeConcluida(v => !v) },
+    { id: 'agua', nome: 'Beber 2L de água', freq: 'Diário', icon: 'cup-water', iconColor: colors.cyan, concluida: metasDiarias?.agua.concluida ?? false, onToggle: () => toggleMetaDiaria('agua') },
+    { id: 'atividade', nome: 'Atividade Física 30min', freq: 'Diário', icon: 'run', iconColor: colors.green, concluida: metasDiarias?.atividade.concluida ?? false, onToggle: () => toggleMetaDiaria('atividade') },
   ];
 
   const s = makeStyles(colors);

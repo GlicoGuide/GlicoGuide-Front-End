@@ -9,15 +9,14 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Share,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { getGlicemia, GlicemiaRecord } from '../services/api';
+import { getGlicemia, getPontos, exportarDados, excluirConta, GlicemiaRecord } from '../services/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-
-const PONTOS = 350;
+import LegalModal from '../components/LegalModal';
 
 function calcStats(registros: GlicemiaRecord[]) {
   if (registros.length === 0) return null;
@@ -45,8 +44,9 @@ function statusLabel(valor: number) {
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const [glicemia, setGlicemia] = useState<GlicemiaRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [glicemia,  setGlicemia]  = useState<GlicemiaRecord[]>([]);
+  const [pontos,    setPontos]    = useState(0);
+  const [loading,   setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Config mockada
@@ -54,10 +54,18 @@ export default function ProfileScreen() {
   const [lembreteGlicemia, setLembreteGlicemia] = useState(true);
   const [unidadeMgdl, setUnidadeMgdl] = useState(true);
 
+  const [legalAberto, setLegalAberto] = useState<'privacidade' | 'termos' | null>(null);
+  const [exportando, setExportando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
+
   const load = useCallback(async () => {
     try {
-      const data = await getGlicemia();
-      setGlicemia(data);
+      const [glicemiaData, pontosData] = await Promise.all([
+        getGlicemia(),
+        getPontos(),
+      ]);
+      setGlicemia(glicemiaData);
+      setPontos(pontosData.total_pontos);
     } catch {
       // mantém dados anteriores
     } finally {
@@ -77,6 +85,49 @@ export default function ProfileScreen() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Sair', style: 'destructive', onPress: signOut },
     ]);
+  }
+
+  async function handleExportarDados() {
+    // sem tela própria pra isso ainda — usa o share sheet do sistema mesmo,
+    // assim o usuário escolhe salvar/enviar o JSON como quiser
+
+    setExportando(true);
+    try {
+      const dados = await exportarDados();
+      await Share.share({
+        title: 'Meus dados - GlicoGuide',
+        message: JSON.stringify(dados, null, 2),
+      });
+    } catch (err: any) {
+      Alert.alert('Erro', err.message || 'Não foi possível exportar seus dados.');
+    } finally {
+      setExportando(false);
+    }
+  }
+
+  function handleExcluirConta() {
+    Alert.alert(
+      'Excluir conta',
+      'Isso apaga permanentemente sua conta, glicemias, refeições e GlicoPoints. Essa ação não pode ser desfeita. Deseja continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir permanentemente',
+          style: 'destructive',
+          onPress: async () => {
+            setExcluindo(true);
+            try {
+              await excluirConta();
+              await signOut();
+            } catch (err: any) {
+              Alert.alert('Erro', err.message || 'Não foi possível excluir a conta.');
+            } finally {
+              setExcluindo(false);
+            }
+          },
+        },
+      ],
+    );
   }
 
   const s = makeStyles(colors);
@@ -99,7 +150,7 @@ export default function ProfileScreen() {
         <Text style={s.email}>{user?.email}</Text>
         <View style={s.pointsBadge}>
           <MaterialCommunityIcons name="star-circle" size={16} color={colors.yellow} />
-          <Text style={s.pointsText}>{PONTOS} GlicoPoints</Text>
+          <Text style={s.pointsText}>{pontos} GlicoPoints</Text>
         </View>
       </View>
 
@@ -175,8 +226,28 @@ export default function ProfileScreen() {
           <Text style={s.cardTitle}>Sobre</Text>
         </View>
         <InfoRow icon="tag-outline" label="Versão" value="1.0.0" colors={colors} />
-        <InfoRow icon="shield-check-outline" label="Privacidade" value="Ver política" colors={colors} />
-        <InfoRow icon="file-document-outline" label="Termos de uso" value="Ver termos" colors={colors} last />
+        <InfoRow icon="shield-check-outline" label="Privacidade" value="Ver política" onPress={() => setLegalAberto('privacidade')} colors={colors} />
+        <InfoRow icon="file-document-outline" label="Termos de uso" value="Ver termos" onPress={() => setLegalAberto('termos')} colors={colors} last />
+      </View>
+
+      {/* Privacidade e Dados (LGPD) */}
+      <View style={s.card}>
+        <View style={s.cardTitleRow}>
+          <MaterialCommunityIcons name="shield-lock-outline" size={18} color={colors.textMuted} />
+          <Text style={s.cardTitle}>Privacidade e Dados</Text>
+        </View>
+
+        <TouchableOpacity style={[s.configRow, s.configRowBorder]} onPress={handleExportarDados} disabled={exportando}>
+          <MaterialCommunityIcons name="download-outline" size={20} color={colors.textMuted} />
+          <Text style={s.configLabel}>Exportar meus dados</Text>
+          {exportando ? <ActivityIndicator color={colors.green} /> : <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={s.configRow} onPress={handleExcluirConta} disabled={excluindo}>
+          <MaterialCommunityIcons name="delete-outline" size={20} color={colors.red} />
+          <Text style={[s.configLabel, { color: colors.red }]}>Excluir minha conta</Text>
+          {excluindo ? <ActivityIndicator color={colors.red} /> : <MaterialCommunityIcons name="chevron-right" size={18} color={colors.red} />}
+        </TouchableOpacity>
       </View>
 
       {/* Sair */}
@@ -187,6 +258,11 @@ export default function ProfileScreen() {
 
       <View style={{ height: 32 }} />
     </ScrollView>
+    <LegalModal
+      visible={legalAberto !== null}
+      tipo={legalAberto ?? 'privacidade'}
+      onClose={() => setLegalAberto(null)}
+    />
     </SafeAreaView>
   );
 }
@@ -204,16 +280,18 @@ function ConfigItem({ icon, label, value, onToggle, last = false, colors }: {
   );
 }
 
-function InfoRow({ icon, label, value, last = false, colors }: {
-  icon: string; label: string; value: string; last?: boolean; colors: any;
+function InfoRow({ icon, label, value, last = false, onPress, colors }: {
+  icon: string; label: string; value: string; last?: boolean; onPress?: () => void; colors: any;
 }) {
   const s = makeStyles(colors);
+  const Wrapper = onPress ? TouchableOpacity : View;
   return (
-    <View style={[s.configRow, !last && s.configRowBorder]}>
+    <Wrapper style={[s.configRow, !last && s.configRowBorder]} onPress={onPress}>
       <MaterialCommunityIcons name={icon} size={20} color={colors.textMuted} />
       <Text style={s.configLabel}>{label}</Text>
-      <Text style={s.infoValue}>{value}</Text>
-    </View>
+      <Text style={[s.infoValue, onPress && { color: colors.green }]}>{value}</Text>
+      {onPress && <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />}
+    </Wrapper>
   );
 }
 

@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, setSecureItem } from './secureStorage';
 
 // --- Lembretes ---
 
@@ -19,13 +19,13 @@ const defaultLembretes: Lembrete[] = [
 ];
 
 export async function getLembretes(): Promise<Lembrete[]> {
-  const raw = await AsyncStorage.getItem(LEMBRETES_KEY);
+  const raw = await getSecureItem(LEMBRETES_KEY);
   if (!raw) return defaultLembretes;
   return JSON.parse(raw);
 }
 
 export async function saveLembretes(lembretes: Lembrete[]): Promise<void> {
-  await AsyncStorage.setItem(LEMBRETES_KEY, JSON.stringify(lembretes));
+  await setSecureItem(LEMBRETES_KEY, JSON.stringify(lembretes));
 }
 
 // --- Diário ---
@@ -40,7 +40,7 @@ export interface EntradaDiario {
 const DIARIO_KEY = '@glicoguide:diario';
 
 export async function getEntradas(): Promise<EntradaDiario[]> {
-  const raw = await AsyncStorage.getItem(DIARIO_KEY);
+  const raw = await getSecureItem(DIARIO_KEY);
   if (!raw) return [];
   return JSON.parse(raw);
 }
@@ -53,12 +53,12 @@ export async function saveEntrada(entrada: EntradaDiario): Promise<void> {
   } else {
     atual.unshift(entrada);
   }
-  await AsyncStorage.setItem(DIARIO_KEY, JSON.stringify(atual));
+  await setSecureItem(DIARIO_KEY, JSON.stringify(atual));
 }
 
 export async function deleteEntrada(id: string): Promise<void> {
   const atual = await getEntradas();
-  await AsyncStorage.setItem(DIARIO_KEY, JSON.stringify(atual.filter(e => e.id !== id)));
+  await setSecureItem(DIARIO_KEY, JSON.stringify(atual.filter(e => e.id !== id)));
 }
 
 // --- Última análise de prato (AI) ---
@@ -79,11 +79,11 @@ export interface UltimaAnalise {
 const ANALISE_KEY = '@glicoguide:ultima_analise';
 
 export async function salvarUltimaAnalise(analise: UltimaAnalise): Promise<void> {
-  await AsyncStorage.setItem(ANALISE_KEY, JSON.stringify(analise));
+  await setSecureItem(ANALISE_KEY, JSON.stringify(analise));
 }
 
 export async function getUltimaAnalise(): Promise<UltimaAnalise | null> {
-  const raw = await AsyncStorage.getItem(ANALISE_KEY);
+  const raw = await getSecureItem(ANALISE_KEY);
   return raw ? JSON.parse(raw) : null;
 }
 
@@ -108,19 +108,19 @@ export interface SessaoCarbo {
 const HISTORICO_CARBO_KEY = '@glicoguide:historico_carbo';
 
 export async function getSessoesCarbo(): Promise<SessaoCarbo[]> {
-  const raw = await AsyncStorage.getItem(HISTORICO_CARBO_KEY);
+  const raw = await getSecureItem(HISTORICO_CARBO_KEY);
   if (!raw) return [];
   return JSON.parse(raw);
 }
 
 export async function salvarSessaoCarbo(sessao: SessaoCarbo): Promise<void> {
   const atual = await getSessoesCarbo();
-  await AsyncStorage.setItem(HISTORICO_CARBO_KEY, JSON.stringify([sessao, ...atual]));
+  await setSecureItem(HISTORICO_CARBO_KEY, JSON.stringify([sessao, ...atual]));
 }
 
 export async function deletarSessaoCarbo(id: string): Promise<void> {
   const atual = await getSessoesCarbo();
-  await AsyncStorage.setItem(HISTORICO_CARBO_KEY, JSON.stringify(atual.filter(s => s.id !== id)));
+  await setSecureItem(HISTORICO_CARBO_KEY, JSON.stringify(atual.filter(s => s.id !== id)));
 }
 
 // --- Metas customizadas ---
@@ -131,16 +131,59 @@ export interface MetaCustom {
   freq: string;
   icon: string;
   concluida: boolean;
+  pontosCreditados?: boolean;
 }
 
 const METAS_KEY = '@glicoguide:metas';
 
 export async function getMetasCustom(): Promise<MetaCustom[]> {
-  const raw = await AsyncStorage.getItem(METAS_KEY);
+  const raw = await getSecureItem(METAS_KEY);
   if (!raw) return [];
   return JSON.parse(raw);
 }
 
 export async function saveMetasCustom(metas: MetaCustom[]): Promise<void> {
-  await AsyncStorage.setItem(METAS_KEY, JSON.stringify(metas));
+  await setSecureItem(METAS_KEY, JSON.stringify(metas));
+}
+
+// --- Metas diárias fixas (água / atividade) ---
+
+export interface MetaDiariaStatus {
+  concluida: boolean;
+  pontosCreditados: boolean;
+  data: string; // yyyy-mm-dd, usado para resetar a cada novo dia
+}
+
+export interface MetasDiariasState {
+  agua: MetaDiariaStatus;
+  atividade: MetaDiariaStatus;
+}
+
+const METAS_DIARIAS_KEY = '@glicoguide:metas_diarias';
+
+function hojeStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function metaDiariaVazia(): MetaDiariaStatus {
+  return { concluida: false, pontosCreditados: false, data: hojeStr() };
+}
+
+export async function getMetasDiarias(): Promise<MetasDiariasState> {
+  const raw = await getSecureItem(METAS_DIARIAS_KEY);
+  if (!raw) return { agua: metaDiariaVazia(), atividade: metaDiariaVazia() };
+
+  // compara a data salva com hoje — se mudou o dia, volta pra "vazia"
+  // em vez de deixar a meta de ontem marcada como concluída
+
+  const parsed: MetasDiariasState = JSON.parse(raw);
+  const hoje = hojeStr();
+  return {
+    agua: parsed.agua?.data === hoje ? parsed.agua : metaDiariaVazia(),
+    atividade: parsed.atividade?.data === hoje ? parsed.atividade : metaDiariaVazia(),
+  };
+}
+
+export async function saveMetasDiarias(state: MetasDiariasState): Promise<void> {
+  await setSecureItem(METAS_DIARIAS_KEY, JSON.stringify(state));
 }

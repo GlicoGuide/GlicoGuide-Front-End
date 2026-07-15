@@ -15,6 +15,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LegalModal from '../components/LegalModal';
 
 
 export default function LoginScreen() {
@@ -25,6 +26,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [consentimento, setConsentimento] = useState(false);
+  const [legalAberto, setLegalAberto] = useState<'privacidade' | 'termos' | null>(null);
   const [loading, setLoading] = useState(false);
 
   function trocarModo(novoModo: 'login' | 'cadastro') {
@@ -33,6 +36,7 @@ export default function LoginScreen() {
     setEmail('');
     setSenha('');
     setConfirmarSenha('');
+    setConsentimento(false);
   }
 
   async function handleLogin() {
@@ -63,9 +67,13 @@ export default function LoginScreen() {
       Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres.');
       return;
     }
+    if (!consentimento) {
+      Alert.alert('Atenção', 'É necessário aceitar a Política de Privacidade e os Termos de Uso para criar a conta.');
+      return;
+    }
     setLoading(true);
     try {
-      await signUp(nome.trim(), email.trim(), senha);
+      await signUp(nome.trim(), email.trim(), senha, consentimento);
     } catch (err: any) {
       Alert.alert('Erro ao criar conta', err.message || 'Tente novamente.');
     } finally {
@@ -166,6 +174,27 @@ export default function LoginScreen() {
               />
             </View>
           )}
+
+          {modo === 'cadastro' && (
+            <TouchableOpacity style={s.consentRow} onPress={() => setConsentimento(v => !v)} activeOpacity={0.7}>
+              <MaterialCommunityIcons
+                name={consentimento ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                size={22}
+                color={consentimento ? colors.green : colors.textMuted}
+              />
+              <Text style={s.consentText}>
+                Li e aceito a{' '}
+                <Text style={s.consentLink} onPress={() => setLegalAberto('privacidade')}>
+                  Política de Privacidade
+                </Text>
+                {' '}e os{' '}
+                <Text style={s.consentLink} onPress={() => setLegalAberto('termos')}>
+                  Termos de Uso
+                </Text>
+                , incluindo o envio de fotos de refeições e dados de saúde para análise por IA.
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity
@@ -183,6 +212,11 @@ export default function LoginScreen() {
 
       </ScrollView>
     </KeyboardAvoidingView>
+    <LegalModal
+      visible={legalAberto !== null}
+      tipo={legalAberto ?? 'privacidade'}
+      onClose={() => setLegalAberto(null)}
+    />
     </SafeAreaView>
   );
 }
@@ -212,6 +246,9 @@ function makeStyles(colors: any) {
     },
     inputIcon: { marginRight: 8 },
     input: { flex: 1, height: 48, color: colors.white, fontSize: 15 },
+    consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 8, marginBottom: 8 },
+    consentText: { flex: 1, color: colors.textMuted, fontSize: 12, lineHeight: 17 },
+    consentLink: { color: colors.green, fontWeight: '600' },
     btnPrimary: { backgroundColor: colors.green, borderRadius: 30, height: 52, alignItems: 'center', justifyContent: 'center' },
     btnPrimaryText: { color: colors.background, fontSize: 16, fontWeight: '700' },
   });

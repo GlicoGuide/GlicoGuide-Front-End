@@ -83,7 +83,9 @@ export default function RelatorioMensalScreen({ navigation }: any) {
   }
   function proximoMes() {
     const next = new Date(ano, mes + 1, 1);
-    if (next > now) return;
+
+    if (next > now) return; // não deixa navegar pra mês futuro
+
     if (mes === 11) { setMes(0); setAno(a => a + 1); }
     else setMes(m => m + 1);
   }

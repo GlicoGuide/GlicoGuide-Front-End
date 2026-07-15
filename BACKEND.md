@@ -1,6 +1,6 @@
-# GlicoGuide — Tarefas do Back-End
+# GlicoGuide — Referência do Back-End
 
-Referência para o desenvolvimento do backend, organizada por prioridade.
+Do ponto de vista do app: o que a API expõe hoje e o que ainda falta pra fechar o ciclo de produção. Para o detalhe de cada rota (body, resposta, erros), veja `docs/api.md` no repositório do backend.
 
 ---
 
@@ -8,155 +8,47 @@ Referência para o desenvolvimento do backend, organizada por prioridade.
 
 | Item | Rota |
 |---|---|
-| Cadastro de usuário | `POST /api/auth/register` |
-| Login com JWT | `POST /api/auth/login` |
-| Registrar glicemia | `POST /api/glycemia` |
+| Cadastro (com consentimento LGPD) | `POST /api/auth/register` |
+| Login com JWT (access + refresh, rate-limit) | `POST /api/auth/login` |
+| Renovar access token | `POST /api/auth/refresh` |
+| Exportar dados do usuário | `GET /api/auth/exportar-dados` |
+| Excluir conta e dados | `DELETE /api/auth/conta` |
+| Registrar glicemia (com alerta clínico) | `POST /api/glycemia` |
 | Listar glicemia | `GET /api/glycemia` |
 | Listar refeições | `GET /api/meals` |
 | Salvar refeição manualmente | `POST /api/meals` |
 | Analisar foto + calcular insulina | `POST /api/insulin/calcular` |
+| Chat com IA (com contexto de saúde) | `POST /api/chat/mensagem` |
+| Total e histórico de GlicoPoints | `GET /api/pontos` |
+| Creditar pontos por meta concluída | `POST /api/pontos/meta` |
+| Resumo clínico (HbA1c estimada, tempo no alvo) | `GET /api/medico/resumo` |
+
+Alertas de glicemia, GlicoPoints reais e a Área Médica — que ficaram pendentes por um bom tempo — já estão integrados nas telas correspondentes (`DadosScreen`, `HomeScreen`, `ProfileScreen`, `LojaGlicoScreen`, `AreaMedicaScreen`).
+
+Backend também tem testes automatizados (pytest) cobrindo auth, rate-limit, refresh token, classificação de glicemia, cálculo de bolus e o resumo médico, mais CI no GitHub Actions.
 
 ---
 
-## 🔴 Prioridade Alta
+## 🔴 O que falta (é infra, não código)
 
-### 1. Alertas de Glicemia Crítica
+### Deploy em produção
+- [ ] Subir o backend no Railway de verdade
+- [ ] Confirmar HTTPS (Railway provê TLS automaticamente, mas precisa verificar depois do deploy)
+- [ ] Copiar a URL final para `PROD_URL` em `src/services/api.ts`
+- [ ] Testar todos os endpoints já na URL de produção antes de publicar o app
 
-**Status:** pendente
+### Keystore de produção (Android)
+- [ ] Gerar um keystore real pra assinar o APK/AAB — hoje ainda usa `debug.keystore`
 
-Embutir classificação clínica na resposta do `POST /api/glycemia`:
-
-| Faixa (mg/dL) | Nível | Mensagem |
-|---|---|---|
-| < 70 | `hipoglicemia` | "Glicemia muito baixa. Tome uma ação imediata." |
-| 70 – 99 | `normal` | "Glicemia normal em jejum." |
-| 100 – 180 | `atencao` | "Glicemia aceitável pós-refeição." |
-| 181 – 250 | `alta` | "Hiperglicemia moderada. Monitore." |
-| > 250 | `critica` | "Glicemia muito alta. Verifique com seu médico." |
-
-**Resposta esperada:**
-```json
-{
-  "id": 42,
-  "valor_mgdl": 320,
-  "created_at": "2026-05-15T15:00:00",
-  "alerta": {
-    "nivel": "critica",
-    "mensagem": "Glicemia muito alta (320 mg/dL). Verifique com seu médico."
-  }
-}
-```
-
-**No frontend:** ler `alerta` no `DadosScreen` e `HomeScreen` e exibir banner de aviso.
+Consulte [`DEPLOY.md`](https://github.com/WillianAsouz4/Back-endglicoguide/blob/main/DEPLOY.md) no repositório do backend para o guia completo.
 
 ---
 
-### 2. Persistir `glicemia_atual` e `peso_prato_g`
+## 🟡 Hardening que pode esperar
 
-**Status:** pendente
+Nada disso bloqueia lançar o app, mas vale considerar conforme a base de usuários cresce:
 
-O endpoint `POST /api/insulin/calcular` recebe esses campos mas não os salva no banco.
-
-- Adicionar colunas `glicemia_atual_mgdl` e `peso_prato_g` na tabela `meals`
-- Passar `peso_prato_g` no prompt do GPT-4o para calibrar a estimativa
-- Retornar ambos na resposta e no `GET /api/meals`
-- Criar migration para as novas colunas
-
----
-
-## 🟡 Prioridade Média
-
-### 3. Endpoint de Chat com IA
-
-**Status:** pendente
-
-`ChatScreen` existe no app mas não tem backend.
-
-**Criar:** `POST /api/chat/mensagem`
-
-```json
-// Body
-{
-  "mensagem": "Posso comer carboidrato à noite?",
-  "historico": [
-    { "role": "user", "content": "..." },
-    { "role": "assistant", "content": "..." }
-  ]
-}
-
-// Resposta
-{
-  "resposta": "Com moderação sim. Prefira ..."
-}
-```
-
-- Integrar com GPT-4o passando contexto de saúde do usuário (glicemias recentes + refeições)
-- Histórico é opcional (permite conversa contínua)
-
----
-
-### 4. Sistema de GlicoPoints
-
-**Status:** pendente — `ProfileScreen` exibe 350 fixos
-
-**Criar:**
-- Tabela `pontos` com eventos e timestamps
-- `GET /api/pontos` → total do usuário
-- `POST /api/pontos/evento` → creditar pontos por ação
-
-| Evento | Pontos |
-|---|---|
-| Registrar glicemia | +10 |
-| Analisar prato | +20 |
-| Cumprir meta | +50 |
-
----
-
-### 5. Área Médica — dados reais
-
-**Status:** pendente — `AreaMedicaScreen` usa dados mockados
-
-**Criar:** `GET /api/medico/resumo`
-
-```json
-{
-  "periodo": "2026-06",
-  "total_registros_glicemia": 45,
-  "media_glicemia": 142,
-  "tempo_no_alvo_pct": 68,
-  "episodios_hipoglicemia": 3,
-  "episodios_hiperglicemia": 8,
-  "hba1c_estimada": 6.8
-}
-```
-
----
-
-## 🟢 Prioridade Baixa (antes de produção)
-
-### 6. Refresh Token
-
-Token JWT expira e o usuário perde a sessão sem aviso.
-
-- `POST /api/auth/refresh-token` → retorna novo token com expiração renovada
-- Frontend implementa com `react-native-keychain`
-
-### 7. Limite de tentativas de login
-
-- Bloquear email/IP por 15 minutos após 5 tentativas falhas consecutivas
-
-### 8. Validação de e-mail no cadastro
-
-- Validar formato `email@dominio.com` no `POST /api/auth/register`
-
----
-
-## Deploy
-
-Consulte [`DEPLOY.md`](./DEPLOY.md) para o guia completo de deploy no Railway.
-
-Checklist rápido:
-- [ ] `OPENAI_API_KEY` e `JWT_SECRET_KEY` configuradas no Railway
-- [ ] PostgreSQL adicionado ao projeto
-- [ ] URL de produção copiada para `PROD_URL` em `src/services/api.ts` do app
-- [ ] Testar todos os endpoints com a URL de produção antes de publicar
+- **Rate limit de login por IP** — hoje o bloqueio é por usuário (5 tentativas erradas → 15 min bloqueado), não há proteção adicional por IP/dispositivo.
+- **Retenção/expiração automática de dados** — a política de privacidade descreve retenção enquanto a conta estiver ativa, mas não há job de expiração/anonimização programado.
+- **Canal de contato do titular (DPO)** — hoje o único contato é o e-mail citado na política de privacidade; não existe uma tela de "fale conosco" dedicada a pedidos de dados.
+- **Testes end-to-end** — a cobertura hoje é unitária (pytest no backend, Jest no app); não há Detox/Maestro rodando o fluxo completo num simulador.

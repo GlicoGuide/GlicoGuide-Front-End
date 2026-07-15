@@ -15,6 +15,7 @@ import { HomeStackParamList } from '../navigation/HomeStack';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getGlicemia, getMeals, GlicemiaRecord, Meal } from '../services/api';
+import { alertaVisual, precisaAtencao } from '../utils/alerta';
 
 type Props = {
   navigation: NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
@@ -78,6 +79,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   const todayGlicemia = glicemia.filter(r => isToday(r.created_at));
   const lastGlicemia = todayGlicemia[todayGlicemia.length - 1];
+  const ultimoRegistro = glicemia[0];
   const todayMeals = meals.filter(m => isToday(m.created_at));
   const totalCarbosHoje = todayMeals.reduce((s, m) => s + m.total_carboidratos_g, 0);
 
@@ -118,6 +120,20 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={s.avatarText}>{avatarLetter}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Alerta de glicemia */}
+      {ultimoRegistro && precisaAtencao(ultimoRegistro.alerta.nivel) && (
+        <View style={[s.alertBanner, { backgroundColor: alertaVisual(ultimoRegistro.alerta.nivel, colors).color + '22' }]}>
+          <MaterialCommunityIcons
+            name={alertaVisual(ultimoRegistro.alerta.nivel, colors).icon}
+            size={22}
+            color={alertaVisual(ultimoRegistro.alerta.nivel, colors).color}
+          />
+          <Text style={[s.alertText, { color: alertaVisual(ultimoRegistro.alerta.nivel, colors).color }]}>
+            {ultimoRegistro.alerta.mensagem}
+          </Text>
+        </View>
+      )}
 
       {/* Card Glicemia */}
       <View style={s.card}>
@@ -206,6 +222,8 @@ function makeStyles(colors: any) {
     subGreeting: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
     avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
     avatarText: { color: colors.background, fontWeight: '700', fontSize: 16 },
+    alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, padding: 14, marginBottom: 12 },
+    alertText: { flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18 },
     card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 },
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
     cardLabel: { color: colors.textMuted, fontSize: 13 },

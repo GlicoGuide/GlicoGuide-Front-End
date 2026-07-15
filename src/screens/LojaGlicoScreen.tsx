@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getPontos } from '../services/api';
 
 
 const recompensas = [
@@ -13,12 +14,33 @@ const recompensas = [
 
 export default function LojaGlicoScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const pontos = 350;
+  const [pontos, setPontos] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await getPontos();
+      setPontos(data.total_pontos);
+    } catch {
+      // mantém saldo anterior
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
   const s = makeStyles(colors);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <ScrollView style={s.container}>
+      <ScrollView
+        style={s.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.green} />
+        }>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={22} color={colors.white} />
@@ -26,7 +48,7 @@ export default function LojaGlicoScreen({ navigation }: any) {
         <Text style={s.title}>Loja de Pontos</Text>
         <View style={s.badge}>
           <MaterialCommunityIcons name="gamepad-variant-outline" size={14} color={colors.green} />
-          <Text style={s.badgeText}>{pontos} GP</Text>
+          <Text style={s.badgeText}>{loading ? '…' : `${pontos} GP`}</Text>
         </View>
       </View>
 
@@ -48,24 +70,35 @@ export default function LojaGlicoScreen({ navigation }: any) {
 
       <Text style={s.sectionTitle}>Recompensas Disponíveis</Text>
 
-      {recompensas.map(r => (
-        <View key={r.id} style={s.card}>
-          <View style={s.cardIconBox}>
-            <MaterialCommunityIcons name={r.icon} size={28} color={colors.yellow} />
-          </View>
-          <View style={s.cardInfo}>
-            <Text style={s.cardNome}>{r.nome}</Text>
-            <Text style={s.cardDesc}>{r.desc}</Text>
-            <View style={s.cardPontosRow}>
-              <MaterialCommunityIcons name="star-circle-outline" size={14} color={colors.yellow} />
-              <Text style={s.cardPontos}>{r.pontos} GlicoPoints</Text>
+      {loading ? (
+        <ActivityIndicator color={colors.green} style={{ marginTop: 16 }} />
+      ) : (
+        recompensas.map(r => {
+          const desbloqueada = pontos >= r.pontos;
+          return (
+            <View key={r.id} style={[s.card, desbloqueada && s.cardDesbloqueada]}>
+              <View style={s.cardIconBox}>
+                <MaterialCommunityIcons name={r.icon} size={28} color={colors.yellow} />
+              </View>
+              <View style={s.cardInfo}>
+                <Text style={s.cardNome}>{r.nome}</Text>
+                <Text style={s.cardDesc}>{r.desc}</Text>
+                <View style={s.cardPontosRow}>
+                  <MaterialCommunityIcons name="star-circle-outline" size={14} color={colors.yellow} />
+                  <Text style={s.cardPontos}>{r.pontos} GlicoPoints</Text>
+                </View>
+              </View>
+              <View style={[s.bloqueadoBadge, desbloqueada && { backgroundColor: colors.green + '22' }]}>
+                <MaterialCommunityIcons
+                  name={desbloqueada ? 'lock-open-variant-outline' : 'lock-outline'}
+                  size={14}
+                  color={desbloqueada ? colors.green : colors.textMuted}
+                />
+              </View>
             </View>
-          </View>
-          <View style={s.bloqueadoBadge}>
-            <MaterialCommunityIcons name="lock-outline" size={14} color={colors.textMuted} />
-          </View>
-        </View>
-      ))}
+          );
+        })
+      )}
 
       <View style={{ height: 24 }} />
     </ScrollView>
@@ -90,6 +123,7 @@ function makeStyles(colors: any) {
     bannerNoteText: { color: colors.textMuted, fontSize: 12 },
     sectionTitle: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: 12 },
     card: { backgroundColor: colors.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 },
+    cardDesbloqueada: { borderWidth: 1, borderColor: colors.green + '55' },
     cardIconBox: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.yellow + '22', alignItems: 'center', justifyContent: 'center' },
     cardInfo: { flex: 1 },
     cardNome: { color: colors.white, fontSize: 14, fontWeight: '600', marginBottom: 2 },

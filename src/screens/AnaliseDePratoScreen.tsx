@@ -30,6 +30,9 @@ export default function AnaliseDePratoScreen({ navigation }: any) {
   const [resultado, setResultado] = useState<AnaliseResult | null>(null);
 
   async function handleTirarFoto() {
+    // no iOS o launchCamera já dispara o prompt do sistema sozinho (via
+    // NSCameraUsageDescription no Info.plist); só o Android precisa disso
+
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.CAMERA,
